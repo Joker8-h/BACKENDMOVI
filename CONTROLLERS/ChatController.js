@@ -3,8 +3,7 @@ const chatService = require("../SERVICES/ChatService");
 const chatController = {
     async init(req, res) {
         try {
-            // Se asume que el usuario es pasajero iniciando charla, o conductor
-            // idPasajero/idConductor deben venir del body o inferirse
+            
             const conversacion = await chatService.initConversacion(req.body);
             res.json(conversacion);
         } catch (error) {

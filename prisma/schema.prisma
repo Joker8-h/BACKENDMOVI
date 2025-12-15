@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
- 
 }
 
 /**
@@ -84,6 +83,12 @@ enum EstadoViaje {
   CANCELADO
 }
 
+enum EstadoDocumentacion {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
 /**
  * =======================
  * MODELOS
@@ -91,61 +96,61 @@ enum EstadoViaje {
  */
 
 model Roles {
-  idRol Int    @id @default(autoincrement())
+  idRol  Int    @id @default(autoincrement())
   nombre String @unique @db.VarChar(50)
 
   usuarios Usuarios[]
 }
 
 model Usuarios {
-  idUsuarios      Int           @id @default(autoincrement())
-  idRol           Int           
-  nombre          String        @db.VarChar(100)
-  email           String        @unique @db.VarChar(150)
-  telefono        String?       @db.VarChar(20)
-  passwordHash    String        @db.VarChar(255)
-  estado          EstadoUsuario @default(ACTIVO)
-  creadoEn        DateTime      @default(now())
+  idUsuarios   Int           @id @default(autoincrement())
+  idRol        Int
+  nombre       String        @db.VarChar(100)
+  email        String        @unique @db.VarChar(150)
+  telefono     String?       @db.VarChar(20)
+  passwordHash String        @db.VarChar(255)
+  estado       EstadoUsuario @default(ACTIVO)
+  creadoEn     DateTime      @default(now())
 
-  rol Roles @relation(fields: [idRol], references: [idRol]) 
+  rol Roles @relation(fields: [idRol], references: [idRol])
 
-  vehiculos               Vehiculos[]
-  pagos                   Pagos[]
-  mensajes                Mensajes[]
-  suscripciones           SuscripcionesConductor[] // Usa el plan a través de Suscripciones
-  viajes                  UsuarioViaje[]
+  vehiculos     Vehiculos[]
+  pagos         Pagos[]
+  mensajes      Mensajes[]
+  suscripciones SuscripcionesConductor[] // Usa el plan a través de Suscripciones
+  viajes        UsuarioViaje[]
 
   calificacionesDadas     Calificaciones[] @relation("Calificador")
   calificacionesRecibidas Calificaciones[] @relation("Calificado")
 
   conversacionesPasajero  Conversaciones[] @relation("ConversacionPasajero")
   conversacionesConductor Conversaciones[] @relation("ConversacionConductor")
+
+  documentacion Documentacion?
 }
-
-
 
 model Vehiculos {
   idVehiculos Int @id @default(autoincrement())
   idUsuario   Int
 
-  marca       String?        @db.VarChar(50)
-  modelo      String?        @db.VarChar(50)
-  placa       String?        @unique @db.VarChar(20)
-  capacidad   Int
-  estado      EstadoVehiculo @default(ACTIVO)
+  marca     String?        @db.VarChar(50)
+  modelo    String?        @db.VarChar(50)
+  placa     String?        @unique @db.VarChar(20)
+  capacidad Int
+  estado    EstadoVehiculo @default(ACTIVO)
 
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
   viajes  Viajes[]
 }
 
 model Rutas {
-  idRuta      Int      @id @default(autoincrement())
-  nombre      String?  @db.VarChar(100)
-  descripcion String?  @db.VarChar(255)
+  idRuta      Int     @id @default(autoincrement())
+  nombre      String? @db.VarChar(100)
+  descripcion String? @db.VarChar(255)
 
-  origen String @default("IA") 
-  estado EstadoRuta @default(BORRADOR)
-  scoreIa Decimal? @db.Decimal(5, 2)
+  origen  String     @default("IA")
+  estado  EstadoRuta @default(BORRADOR)
+  scoreIa Decimal?   @db.Decimal(5, 2)
 
   creadoEn DateTime @default(now())
 
@@ -158,12 +163,12 @@ model Paradas {
   idParada Int @id @default(autoincrement())
   idRuta   Int
 
-  nombre        String?    @db.VarChar(100)
-  lat           Decimal?   @db.Decimal(10, 8)
-  lng           Decimal?   @db.Decimal(11, 8)
-  orden         Int
-  kmAcumulado   Decimal?   @db.Decimal(10, 2)
-  tipo          TipoParada @default(AMBAS)
+  nombre      String?    @db.VarChar(100)
+  lat         Decimal?   @db.Decimal(10, 8)
+  lng         Decimal?   @db.Decimal(11, 8)
+  orden       Int
+  kmAcumulado Decimal?   @db.Decimal(10, 2)
+  tipo        TipoParada @default(AMBAS)
 
   ruta Rutas @relation(fields: [idRuta], references: [idRuta])
 
@@ -175,16 +180,16 @@ model Paradas {
 }
 
 model Viajes {
-  idViajes          Int      @id @default(autoincrement())
-  idRuta            Int
-  idVehiculos       Int
+  idViajes    Int @id @default(autoincrement())
+  idRuta      Int
+  idVehiculos Int
 
-  fechaHoraSalida   DateTime
-  cuposTotales      Int
-  cuposDisponibles  Int
+  fechaHoraSalida  DateTime
+  cuposTotales     Int
+  cuposDisponibles Int
 
-  estado EstadoViaje @default(CREADO)
-  creadoEn DateTime @default(now())
+  estado   EstadoViaje @default(CREADO)
+  creadoEn DateTime    @default(now())
 
   ruta     Rutas     @relation(fields: [idRuta], references: [idRuta])
   vehiculo Vehiculos @relation(fields: [idVehiculos], references: [idVehiculos])
@@ -205,8 +210,8 @@ model UsuarioViaje {
   distanciaRecorrida Decimal? @db.Decimal(10, 2)
   precioFinal        Decimal? @db.Decimal(10, 2)
 
-  estado EstadoUsuarioViaje @default(RESERVADO)
-  creadoEn DateTime @default(now())
+  estado   EstadoUsuarioViaje @default(RESERVADO)
+  creadoEn DateTime           @default(now())
 
   usuario Usuarios @relation(fields: [idUsuarios], references: [idUsuarios])
   viaje   Viajes   @relation(fields: [idViajes], references: [idViajes])
@@ -255,7 +260,7 @@ model Conversaciones {
   idPasajero     Int
   idConductor    Int
 
-  fechaCreacion DateTime @default(now())
+  fechaCreacion DateTime           @default(now())
   estado        EstadoConversacion
 
   viaje     Viajes   @relation(fields: [idViaje], references: [idViajes])
@@ -272,8 +277,8 @@ model Mensajes {
 
   mensaje    String?
   tipo       TipoMensaje
-  fechaEnvio DateTime @default(now())
-  leido      Boolean  @default(false)
+  fechaEnvio DateTime    @default(now())
+  leido      Boolean     @default(false)
 
   conversacion Conversaciones @relation(fields: [idConversacion], references: [idConversacion])
   remitente    Usuarios       @relation(fields: [idRemitente], references: [idUsuarios])
@@ -283,7 +288,7 @@ model Pagos {
   idPago    Int @id @default(autoincrement())
   idUsuario Int
 
-  monto     Decimal? @db.Decimal(10, 2)
+  monto     Decimal?   @db.Decimal(10, 2)
   tipoPago  TipoPago
   estado    EstadoPago
   fechaPago DateTime?
@@ -292,15 +297,15 @@ model Pagos {
 }
 
 model PlanesConductor {
-  idPlan      Int      @id @default(autoincrement())
-  nombre      String?  @db.VarChar(50)
-  descripcion String?  @db.VarChar(255)
+  idPlan      Int     @id @default(autoincrement())
+  nombre      String? @db.VarChar(50)
+  descripcion String? @db.VarChar(255)
 
-  tipo                TipoPlan
-  precio              Decimal? @db.Decimal(10, 2)
-  maxViajes           Int?
-  porcentajeComision  Decimal? @db.Decimal(5, 2)
-  activo              Boolean  @default(true)
+  tipo               TipoPlan
+  precio             Decimal? @db.Decimal(10, 2)
+  maxViajes          Int?
+  porcentajeComision Decimal? @db.Decimal(5, 2)
+  activo             Boolean  @default(true)
 
   suscripciones SuscripcionesConductor[]
 }
@@ -316,7 +321,7 @@ model SuscripcionesConductor {
   estado               EstadoSuscripcion @default(ACTIVA)
   renovacionAutomatica Boolean           @default(false)
 
-  usuario Usuarios      @relation(fields: [idUsuario], references: [idUsuarios])
+  usuario Usuarios        @relation(fields: [idUsuario], references: [idUsuarios])
   plan    PlanesConductor @relation(fields: [idPlan], references: [idPlan])
 }
 
@@ -330,4 +335,21 @@ model IaRutasLog {
   fechaGeneracion DateTime @default(now())
 
   ruta Rutas @relation(fields: [idRuta], references: [idRuta])
+}
+
+model Documentacion {
+  idDocumentacion Int @id @default(autoincrement())
+  idUsuario       Int @unique
+
+  tipoDocumento   String? @db.VarChar(50)
+  numeroDocumento String? @db.VarChar(50)
+
+  imagenFrontalUrl String? @db.VarChar(255)
+  imagenDorsalUrl  String? @db.VarChar(255)
+
+  estado        EstadoDocumentacion @default(PENDIENTE)
+  fechaSubida   DateTime            @default(now())
+  observaciones String?             @db.VarChar(255)
+
+  usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
 }

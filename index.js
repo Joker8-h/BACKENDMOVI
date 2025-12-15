@@ -21,6 +21,7 @@ const paradasRoutes = require('./ROUTES/ParadasRoutes');
 const viajeTramosRoutes = require('./ROUTES/ViajeTramosRoutes');
 const planesConductorRoutes = require('./ROUTES/PlanesConductorRoutes');
 const iaRutasLogRoutes = require('./ROUTES/IaRutasLogRoutes');
+const documentacionRoutes = require('./ROUTES/DocumentacionRoutes');
 //uso de cors
 app.use(cors(
     {
@@ -45,6 +46,7 @@ app.use('/api/paradas', paradasRoutes);
 app.use('/api/viaje-tramos', viajeTramosRoutes);
 app.use('/api/planes-conductor', planesConductorRoutes);
 app.use('/api/ia-rutas-log', iaRutasLogRoutes);
+app.use('/api/documentacion', documentacionRoutes);
 
 
 
