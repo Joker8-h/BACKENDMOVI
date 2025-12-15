@@ -1,0 +1,20 @@
+const express = require('express');
+const router = express.Router();
+const chatController = require('../CONTROLLERS/ChatController');
+const verificarToken = require('../MIDDLEWARE/authmiddleware');
+
+router.use(verificarToken);
+
+// Iniciar conversacion
+router.post('/conversaciones', chatController.init);
+
+// Enviar mensaje
+router.post('/mensajes', chatController.enviarMensaje);
+
+// Ver mis conversaciones
+router.get('/conversaciones', chatController.getMisConversaciones);
+
+// Ver mensajes de una conversacion
+router.get('/conversaciones/:id/mensajes', chatController.getMensajes);
+
+module.exports = router;

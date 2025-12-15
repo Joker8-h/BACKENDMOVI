@@ -1,0 +1,333 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+ 
+}
+
+/**
+ * =======================
+ * ENUMS
+ * =======================
+ */
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+  SUSPENDIDO
+}
+
+enum EstadoConversacion {
+  ACTIVA
+  CERRADA
+}
+
+enum TipoMensaje {
+  TEXTO
+  SISTEMA
+}
+
+enum TipoPago {
+  VIAJE
+  PLAN_CONDUCTOR
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+}
+
+enum TipoParada {
+  SUBIDA
+  BAJADA
+  AMBAS
+}
+
+enum TipoPlan {
+  SEMANAL
+  MENSUAL
+  POR_VIAJE
+}
+
+enum EstadoRuta {
+  BORRADOR
+  DISPONIBLE
+  ARCHIVADA
+}
+
+enum EstadoSuscripcion {
+  ACTIVA
+  VENCIDA
+  CANCELADA
+}
+
+enum EstadoUsuarioViaje {
+  RESERVADO
+  CANCELADO
+  COMPLETADO
+}
+
+enum EstadoVehiculo {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoViaje {
+  CREADO
+  PUBLICADO
+  EN_CURSO
+  FINALIZADO
+  CANCELADO
+}
+
+/**
+ * =======================
+ * MODELOS
+ * =======================
+ */
+
+model Roles {
+  idRol Int    @id @default(autoincrement())
+  nombre String @unique @db.VarChar(50)
+
+  usuarios Usuarios[]
+}
+
+model Usuarios {
+  idUsuarios      Int           @id @default(autoincrement())
+  idRol           Int           
+  nombre          String        @db.VarChar(100)
+  email           String        @unique @db.VarChar(150)
+  telefono        String?       @db.VarChar(20)
+  passwordHash    String        @db.VarChar(255)
+  estado          EstadoUsuario @default(ACTIVO)
+  creadoEn        DateTime      @default(now())
+
+  rol Roles @relation(fields: [idRol], references: [idRol]) 
+
+  vehiculos               Vehiculos[]
+  pagos                   Pagos[]
+  mensajes                Mensajes[]
+  suscripciones           SuscripcionesConductor[] // Usa el plan a través de Suscripciones
+  viajes                  UsuarioViaje[]
+
+  calificacionesDadas     Calificaciones[] @relation("Calificador")
+  calificacionesRecibidas Calificaciones[] @relation("Calificado")
+
+  conversacionesPasajero  Conversaciones[] @relation("ConversacionPasajero")
+  conversacionesConductor Conversaciones[] @relation("ConversacionConductor")
+}
+
+
+
+model Vehiculos {
+  idVehiculos Int @id @default(autoincrement())
+  idUsuario   Int
+
+  marca       String?        @db.VarChar(50)
+  modelo      String?        @db.VarChar(50)
+  placa       String?        @unique @db.VarChar(20)
+  capacidad   Int
+  estado      EstadoVehiculo @default(ACTIVO)
+
+  usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+  viajes  Viajes[]
+}
+
+model Rutas {
+  idRuta      Int      @id @default(autoincrement())
+  nombre      String?  @db.VarChar(100)
+  descripcion String?  @db.VarChar(255)
+
+  origen String @default("IA") 
+  estado EstadoRuta @default(BORRADOR)
+  scoreIa Decimal? @db.Decimal(5, 2)
+
+  creadoEn DateTime @default(now())
+
+  paradas Paradas[]
+  viajes  Viajes[]
+  iaLogs  IaRutasLog[]
+}
+
+model Paradas {
+  idParada Int @id @default(autoincrement())
+  idRuta   Int
+
+  nombre        String?    @db.VarChar(100)
+  lat           Decimal?   @db.Decimal(10, 8)
+  lng           Decimal?   @db.Decimal(11, 8)
+  orden         Int
+  kmAcumulado   Decimal?   @db.Decimal(10, 2)
+  tipo          TipoParada @default(AMBAS)
+
+  ruta Rutas @relation(fields: [idRuta], references: [idRuta])
+
+  usuarioViajeSubida UsuarioViaje[] @relation("ParadaSubida")
+  usuarioViajeBajada UsuarioViaje[] @relation("ParadaBajada")
+
+  tramosInicio ViajeTramos[] @relation("TramoInicio")
+  tramosFin    ViajeTramos[] @relation("TramoFin")
+}
+
+model Viajes {
+  idViajes          Int      @id @default(autoincrement())
+  idRuta            Int
+  idVehiculos       Int
+
+  fechaHoraSalida   DateTime
+  cuposTotales      Int
+  cuposDisponibles  Int
+
+  estado EstadoViaje @default(CREADO)
+  creadoEn DateTime @default(now())
+
+  ruta     Rutas     @relation(fields: [idRuta], references: [idRuta])
+  vehiculo Vehiculos @relation(fields: [idVehiculos], references: [idVehiculos])
+
+  usuarios       UsuarioViaje[]
+  calificaciones Calificaciones[]
+  conversaciones Conversaciones[]
+  tramos         ViajeTramos[]
+}
+
+model UsuarioViaje {
+  idUsuarios     Int
+  idViajes       Int
+  idParadaSubida Int
+  idParadaBajada Int
+
+  asientosReservados Int      @default(1)
+  distanciaRecorrida Decimal? @db.Decimal(10, 2)
+  precioFinal        Decimal? @db.Decimal(10, 2)
+
+  estado EstadoUsuarioViaje @default(RESERVADO)
+  creadoEn DateTime @default(now())
+
+  usuario Usuarios @relation(fields: [idUsuarios], references: [idUsuarios])
+  viaje   Viajes   @relation(fields: [idViajes], references: [idViajes])
+
+  paradaSubida Paradas @relation("ParadaSubida", fields: [idParadaSubida], references: [idParada])
+  paradaBajada Paradas @relation("ParadaBajada", fields: [idParadaBajada], references: [idParada])
+
+  @@id([idUsuarios, idViajes])
+}
+
+model ViajeTramos {
+  idViaje        Int
+  idParadaInicio Int
+  idParadaFin    Int
+
+  asientosTotales  Int
+  asientosOcupados Int @default(0)
+
+  viaje Viajes @relation(fields: [idViaje], references: [idViajes])
+
+  paradaInicio Paradas @relation("TramoInicio", fields: [idParadaInicio], references: [idParada])
+  paradaFin    Paradas @relation("TramoFin", fields: [idParadaFin], references: [idParada])
+
+  @@id([idViaje, idParadaInicio, idParadaFin])
+}
+
+model Calificaciones {
+  idCalificacion Int @id @default(autoincrement())
+  idViaje        Int
+  idCalificador  Int
+  idCalificado   Int
+
+  puntuacion Int
+  comentario String?
+
+  creadoEn DateTime @default(now())
+
+  viaje       Viajes   @relation(fields: [idViaje], references: [idViajes])
+  calificador Usuarios @relation("Calificador", fields: [idCalificador], references: [idUsuarios])
+  calificado  Usuarios @relation("Calificado", fields: [idCalificado], references: [idUsuarios])
+}
+
+model Conversaciones {
+  idConversacion Int @id @default(autoincrement())
+  idViaje        Int
+  idPasajero     Int
+  idConductor    Int
+
+  fechaCreacion DateTime @default(now())
+  estado        EstadoConversacion
+
+  viaje     Viajes   @relation(fields: [idViaje], references: [idViajes])
+  pasajero  Usuarios @relation("ConversacionPasajero", fields: [idPasajero], references: [idUsuarios])
+  conductor Usuarios @relation("ConversacionConductor", fields: [idConductor], references: [idUsuarios])
+
+  mensajes Mensajes[]
+}
+
+model Mensajes {
+  idMensaje      Int @id @default(autoincrement())
+  idConversacion Int
+  idRemitente    Int
+
+  mensaje    String?
+  tipo       TipoMensaje
+  fechaEnvio DateTime @default(now())
+  leido      Boolean  @default(false)
+
+  conversacion Conversaciones @relation(fields: [idConversacion], references: [idConversacion])
+  remitente    Usuarios       @relation(fields: [idRemitente], references: [idUsuarios])
+}
+
+model Pagos {
+  idPago    Int @id @default(autoincrement())
+  idUsuario Int
+
+  monto     Decimal? @db.Decimal(10, 2)
+  tipoPago  TipoPago
+  estado    EstadoPago
+  fechaPago DateTime?
+
+  usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+}
+
+model PlanesConductor {
+  idPlan      Int      @id @default(autoincrement())
+  nombre      String?  @db.VarChar(50)
+  descripcion String?  @db.VarChar(255)
+
+  tipo                TipoPlan
+  precio              Decimal? @db.Decimal(10, 2)
+  maxViajes           Int?
+  porcentajeComision  Decimal? @db.Decimal(5, 2)
+  activo              Boolean  @default(true)
+
+  suscripciones SuscripcionesConductor[]
+}
+
+model SuscripcionesConductor {
+  idSuscripcion Int @id @default(autoincrement())
+  idUsuario     Int
+  idPlan        Int
+
+  fechaInicio DateTime?
+  fechaFin    DateTime?
+
+  estado               EstadoSuscripcion @default(ACTIVA)
+  renovacionAutomatica Boolean           @default(false)
+
+  usuario Usuarios      @relation(fields: [idUsuario], references: [idUsuarios])
+  plan    PlanesConductor @relation(fields: [idPlan], references: [idPlan])
+}
+
+model IaRutasLog {
+  id     Int @id @default(autoincrement())
+  idRuta Int
+
+  prompt          String?
+  parametrosJson  Json?
+  modeloIa        String?  @db.VarChar(100)
+  fechaGeneracion DateTime @default(now())
+
+  ruta Rutas @relation(fields: [idRuta], references: [idRuta])
+}
