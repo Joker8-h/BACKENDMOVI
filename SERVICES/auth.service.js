@@ -9,7 +9,7 @@ const prisma = new PrismaClient({
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro"; // Fallback por seguridad dev
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
+const JWT_EXPIRES_IN = process.env.EXPIRE_TIME || "1d";
 
 const authService = {
     async register(data) {
