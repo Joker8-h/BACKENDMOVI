@@ -1,23 +1,21 @@
-const documentacionService = require('../SERVICES/DocumentacionService');
+const documentacionService = require("../SERVICES/DocumentacionService");
 
 const documentacionController = {
 
-  // Subir o actualizar documentos
+  // Subir o actualizar documentación (usuario autenticado)
   async upload(req, res) {
     try {
-      console.log("USUARIO JWT 👉", req.usuario);
-
-      // 👇 USÁ EL ID CORRECTO
-      const idUsuario = req.usuario.idUsuarios;
-
-      if (!idUsuario) {
-        return res.status(400).json({
-          error: "No se pudo obtener el id del usuario autenticado"
+      // Validar autenticación
+      if (!req.usuario || !req.usuario.idUsuarios) {
+        return res.status(401).json({
+          error: "Usuario no autenticado"
         });
       }
 
+      const idUsuario = req.usuario.idUsuarios;
       const data = req.body;
 
+      // Validaciones básicas
       if (!data.tipoDocumento || !data.numeroDocumento) {
         return res.status(400).json({
           error: "Faltan campos obligatorios (tipoDocumento, numeroDocumento)"
@@ -35,7 +33,7 @@ const documentacionController = {
       });
 
     } catch (error) {
-      console.error("ERROR REAL 👉", error);
+      console.error("ERROR REAL ", error);
       res.status(500).json({
         error: "Error al guardar la documentación",
         detalle: error.message
@@ -46,14 +44,13 @@ const documentacionController = {
   // Obtener mis documentos
   async getMyDocs(req, res) {
     try {
-      const idUsuario = req.usuario.idUsuarios;
-
-      if (!idUsuario) {
-        return res.status(400).json({
-          error: "No se pudo obtener el id del usuario"
+      if (!req.usuario || !req.usuario.idUsuarios) {
+        return res.status(401).json({
+          error: "Usuario no autenticado"
         });
       }
 
+      const idUsuario = req.usuario.idUsuarios;
       const docs = await documentacionService.getByUsuarioId(idUsuario);
 
       if (!docs || docs.length === 0) {
@@ -62,10 +59,10 @@ const documentacionController = {
         });
       }
 
-      res.json(docs);
+      res.status(200).json(docs);
 
     } catch (error) {
-      console.error("ERROR REAL 👉", error);
+      console.error("ERROR REAL ", error);
       res.status(500).json({
         error: "Error al obtener documentación",
         detalle: error.message
@@ -73,11 +70,17 @@ const documentacionController = {
     }
   },
 
-  // Validar documentos (ADMIN)
+  // Validar documentación (ADMIN)
   async validate(req, res) {
     try {
       const { id } = req.params;
       const { estado, observaciones } = req.body;
+
+      if (!id) {
+        return res.status(400).json({
+          error: "idDocumentacion es obligatorio"
+        });
+      }
 
       if (!['APROBADO', 'RECHAZADO'].includes(estado)) {
         return res.status(400).json({
@@ -91,13 +94,13 @@ const documentacionController = {
         observaciones
       );
 
-      res.json({
+      res.status(200).json({
         message: `Documentación marcada como ${estado}`,
         doc
       });
 
     } catch (error) {
-      console.error("ERROR REAL 👉", error);
+      console.error("ERROR REAL ", error);
       res.status(500).json({
         error: "Error al validar documentación",
         detalle: error.message
