@@ -4,43 +4,45 @@
  * @returns {Function} Middleware function
  */
 const authorize = (allowedRoles = []) => {
-  return (req, res, next) => {
-
-    // 🔴 CAMBIO CLAVE AQUÍ
-    if (!req.usuario) {
-      return res.status(401).json({
-        error: "No autorizado. Token no proporcionado o inválido."
-      });
-    }
-
-    // Si no se especifican roles, solo requiere autenticación
-    if (allowedRoles.length === 0) {
-      return next();
-    }
-
-    const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase());
-    const userRole = req.usuario.rol
-      ? req.usuario.rol.toUpperCase()
-      : null;
-
-    if (!userRole) {
-      return res.status(403).json({
-        error: "Usuario sin rol asignado. Por favor contacte al administrador."
-      });
-    }
-
-    if (!normalizedAllowedRoles.includes(userRole)) {
-      return res.status(403).json({
-        error: "Acceso prohibido. No tienes el rol necesario.",
-        details: {
-          yourRole: req.usuario.rol,
-          requiredRoles: allowedRoles
+    return (req, res, next) => {
+        // Validar que el usuario esté autenticado
+        if (!req.user) {
+            return res.status(401).json({
+                error: "No autorizado. Token no proporcionado o inválido."
+            });
         }
-      });
-    }
 
-    next();
-  };
+        // Si no se especifican roles, solo requiere autenticación
+        if (allowedRoles.length === 0) {
+            return next();
+        }
+
+        // Normalizar roles a mayúsculas para comparación
+        const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase());
+        const userRole = req.user.rol ? req.user.rol.toUpperCase() : null;
+
+        // Validar que el usuario tenga un rol
+        if (!userRole) {
+            return res.status(403).json({
+                error: "Usuario sin rol asignado. Por favor contacte al administrador."
+            });
+        }
+
+        // Verificar si el rol del usuario está en los roles permitidos
+        if (!normalizedAllowedRoles.includes(userRole)) {
+            return res.status(403).json({
+                error: "Acceso prohibido. No tienes el rol necesario.",
+                details: {
+                    yourRole: req.user.rol,
+                    requiredRoles: allowedRoles
+                }
+            });
+        }
+
+        // Usuario autorizado
+        next();
+    };
 };
 
 module.exports = authorize;
+
