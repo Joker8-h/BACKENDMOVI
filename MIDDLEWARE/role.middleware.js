@@ -7,6 +7,7 @@ const authorize = (allowedRoles = []) => {
     return (req, res, next) => {
         // Validar que el usuario esté autenticado
         if (!req.user) {
+            console.log("RoleMiddleware: Usuario no autenticado (req.user es undefined)");
             return res.status(401).json({
                 error: "No autorizado. Token no proporcionado o inválido."
             });
@@ -17,12 +18,23 @@ const authorize = (allowedRoles = []) => {
             return next();
         }
 
-        // Normalizar roles a mayúsculas para comparación
-        const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase());
-        const userRole = req.user.rol ? req.user.rol.toUpperCase() : null;
+        // Normalizar roles permitidos a mayúsculas
+        const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase().trim());
+
+        // Obtener y normalizar el rol del usuario
+        // El token puede traer 'rol' como string ("ADMIN") o el objeto podría estar estructurado diferente
+        let rawUserRole = req.user.rol;
+
+        // Si por alguna razón es un objeto (ej: { nombre: "ADMIN" }), tratamos de sacar el nombre
+        if (rawUserRole && typeof rawUserRole === 'object' && rawUserRole.nombre) {
+            rawUserRole = rawUserRole.nombre;
+        }
+
+        const userRole = rawUserRole ? String(rawUserRole).toUpperCase().trim() : null;
 
         // Validar que el usuario tenga un rol
         if (!userRole) {
+            console.log("RoleMiddleware: Usuario autenticado pero sin rol definido en el token", req.user);
             return res.status(403).json({
                 error: "Usuario sin rol asignado. Por favor contacte al administrador."
             });
@@ -30,11 +42,12 @@ const authorize = (allowedRoles = []) => {
 
         // Verificar si el rol del usuario está en los roles permitidos
         if (!normalizedAllowedRoles.includes(userRole)) {
+            console.log(`RoleMiddleware: Acceso denegado. Rol usuario: '${userRole}', Roles permitidos: [${normalizedAllowedRoles.join(', ')}]`);
             return res.status(403).json({
                 error: "Acceso prohibido. No tienes el rol necesario.",
                 details: {
-                    yourRole: req.user.rol,
-                    requiredRoles: allowedRoles
+                    yourRole: userRole,
+                    requiredRoles: normalizedAllowedRoles
                 }
             });
         }

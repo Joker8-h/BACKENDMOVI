@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
     console.error("ERROR CRÍTICO DE CONFIGURACIÓN: La variable de entorno JWT_SECRET no está definida. Verifique su archivo .env.");
- 
+
 }
 
 function verificarToken(req, res, next) {
@@ -25,14 +25,14 @@ function verificarToken(req, res, next) {
     // 3. El formato esperado es "Bearer <token>"
     // Dividir el encabezado y tomar la segunda parte
     const parts = authHeader.split(' ');
-    
+
     // Verificar el formato (Debe tener 2 partes y la primera debe ser 'Bearer')
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
         return res.status(401).json({ mensaje: "Formato de token inválido. Debe ser 'Bearer <token>'" });
     }
-    
+
     const token = parts[1];
-    
+
     // 4. Verificar la clave secreta antes de usar jwt.verify
     if (!JWT_SECRET) {
         // En un entorno de producción real, esto podría ser un 500
@@ -43,14 +43,14 @@ function verificarToken(req, res, next) {
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
             // 403 Forbidden: El usuario tiene credenciales, pero son inválidas
-            
+
             let mensajeError = "Token inválido o corrupto.";
-            
+
             if (err.name === 'TokenExpiredError') {
                 mensajeError = "Token expirado. Por favor, inicie sesión de nuevo.";
             }
 
-            return res.status(403).json({ 
+            return res.status(403).json({
                 mensaje: mensajeError,
                 error: err.name // Añadir el tipo de error para el cliente
             });
@@ -58,7 +58,7 @@ function verificarToken(req, res, next) {
 
         // Token Válido: Adjuntar el payload decodificado (req.user)
         req.user = decoded;
-        
+
         // Continuar con la función o controlador de ruta
         next();
     });
