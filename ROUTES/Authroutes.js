@@ -12,7 +12,10 @@ const authorize = require('../MIDDLEWARE/role.middleware.js');
 
 
 router.get('/', verfificacion, authorize(['ADMIN']), authController.getUsuarios);
-router.put('/:id', verfificacion, authorize(['ADMIN','CONDUCTOR']), authController.updateUsuario);
+router.get('/conductores', verfificacion, authorize(['ADMIN']), authController.getConductores);
+router.get('/pasajeros', verfificacion, authorize(['ADMIN']), authController.getPasajeros);
+
+router.put('/:id', verfificacion, authorize(['ADMIN']), authController.updateUsuario);
 router.patch('/:id/estado', verfificacion, authorize(['ADMIN']), authController.cambiarEstadoUsuario);
 router.delete('/:id', verfificacion, authorize(['ADMIN']), authController.eliminarUsuario);
 

@@ -131,6 +131,58 @@ const authService = {
         return users;
     },
 
+    /** Lista solo conductores (excluye ADMIN) */
+    async getDrivers() {
+        return await prisma.usuarios.findMany({
+            where: {
+                rol: { nombre: 'CONDUCTOR' }
+            },
+            select: {
+                idUsuarios: true,
+                nombre: true,
+                email: true,
+                telefono: true,
+                estado: true,
+                creadoEn: true,
+                rol: {
+                    select: {
+                        nombre: true,
+                        idRol: true
+                    }
+                }
+            },
+            orderBy: {
+                creadoEn: 'desc'
+            }
+        });
+    },
+
+    /** Lista solo pasajeros (excluye CONDUCTOR y ADMIN) */
+    async getPassengers() {
+        return await prisma.usuarios.findMany({
+            where: {
+                rol: { nombre: 'PASAJERO' }
+            },
+            select: {
+                idUsuarios: true,
+                nombre: true,
+                email: true,
+                telefono: true,
+                estado: true,
+                creadoEn: true,
+                rol: {
+                    select: {
+                        nombre: true,
+                        idRol: true
+                    }
+                }
+            },
+            orderBy: {
+                creadoEn: 'desc'
+            }
+        });
+    },
+
     async updateUser(id, data) {
         const { password, ...updateData } = data; // Evitar actualizar password aquí directamente
 

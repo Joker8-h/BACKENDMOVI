@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: db-movi
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: moviback
+      MYSQL_USER: moviuser
+      MYSQL_PASSWORD: movipassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - movi-network
+
+  backend:
+    build: .
+    container_name: movi-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "mysql://moviuser:movipassword@mysql:3306/moviback"
+    depends_on:
+      - mysql
+    networks:
+      - movi-network
+
+volumes:
+  mysql_data:
+
+
+networks:
+  movi-network:
+    driver: bridge

@@ -48,6 +48,24 @@ const authController = {
         }
     },
 
+    async getConductores(req, res) {
+        try {
+            const drivers = await authService.getDrivers();
+            res.json(drivers);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async getPasajeros(req, res) {
+        try {
+            const passengers = await authService.getPassengers();
+            res.json(passengers);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
     async updateUsuario(req, res) {
         try {
             const { id } = req.params;
