@@ -25,6 +25,6 @@ router.get('/:id', rutasController.getById);
 router.put('/:id', authorize(['ADMIN', 'CONDUCTOR']), rutasController.update);
 
 // Eliminar ruta
-router.delete('/:id', authorize(['ADMIN']), rutasController.delete);
+router.delete('/:id', authorize(['ADMIN','CONDUCTOR']), rutasController.delete);
 
 module.exports = router;

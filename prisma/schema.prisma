@@ -201,10 +201,22 @@ model Viajes {
 }
 
 model UsuarioViaje {
-  idUsuarios     Int
-  idViajes       Int
-  idParadaSubida Int
-  idParadaBajada Int
+  idUsuarios Int
+  idViajes   Int
+
+  // Paradas referenciadas (ahora OPCIONALES)
+  idParadaSubida Int?
+  idParadaBajada Int?
+
+  // Coordenadas personalizadas de SUBIDA
+  latSubida    Decimal? @db.Decimal(10, 8)
+  lngSubida    Decimal? @db.Decimal(11, 8)
+  nombreSubida String?  @db.VarChar(255)
+
+  // Coordenadas personalizadas de BAJADA
+  latBajada    Decimal? @db.Decimal(10, 8)
+  lngBajada    Decimal? @db.Decimal(11, 8)
+  nombreBajada String?  @db.VarChar(255)
 
   asientosReservados Int      @default(1)
   distanciaRecorrida Decimal? @db.Decimal(10, 2)
@@ -216,8 +228,8 @@ model UsuarioViaje {
   usuario Usuarios @relation(fields: [idUsuarios], references: [idUsuarios])
   viaje   Viajes   @relation(fields: [idViajes], references: [idViajes])
 
-  paradaSubida Paradas @relation("ParadaSubida", fields: [idParadaSubida], references: [idParada])
-  paradaBajada Paradas @relation("ParadaBajada", fields: [idParadaBajada], references: [idParada])
+  paradaSubida Paradas? @relation("ParadaSubida", fields: [idParadaSubida], references: [idParada])
+  paradaBajada Paradas? @relation("ParadaBajada", fields: [idParadaBajada], references: [idParada])
 
   @@id([idUsuarios, idViajes])
 }
