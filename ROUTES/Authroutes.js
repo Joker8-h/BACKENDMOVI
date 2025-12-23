@@ -1,10 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const verfificacion = require('../MIDDLEWARE/authmiddleware.js');
 const authController = require('../CONTROLLERS/authcontroller.js');
 
+// Rate Limiting para Login (protección contra fuerza bruta)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5, // Solo 5 intentos de login por IP
+    message: 'Demasiados intentos de inicio de sesión. Por favor intente más tarde.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 router.post('/registro', authController.register);
-router.post('/login', authController.login);
+router.post('/login', loginLimiter, authController.login);
 
 const authorize = require('../MIDDLEWARE/role.middleware.js');
 

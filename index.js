@@ -2,8 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
+// Rate Limiting Global
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100, // Límite de 100 peticiones por ventana
+    message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
+app.use(generalLimiter);
 app.use(express.json());
 
 
