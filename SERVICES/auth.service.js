@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro"; 
+const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro";
 const JWT_EXPIRES_IN = process.env.EXPIRE_TIME || "1d";
 
 /**
@@ -58,7 +58,7 @@ function validarPasswordSegura(password) {
 }
 
 const authService = {
-    async register(data) {
+    async registrar(data) {
         const { email, password, nombre, telefono, rol } = data;
 
         // 1. Validar contraseña segura
@@ -77,7 +77,7 @@ const authService = {
         }
 
         // 2. Resolver el Rol (String -> ID)
-        
+
         let nombreRol = rol || "PASAJERO";
         let rolDb = await prisma.roles.findUnique({
             where: { nombre: nombreRol }
@@ -114,7 +114,7 @@ const authService = {
         return usuarioSinPassword;
     },
 
-    async login(email, password) {
+    async iniciarSesion(email, password) {
         // Buscar usuario e incluir su Rol
         const usuario = await prisma.usuarios.findUnique({
             where: { email },
@@ -158,7 +158,7 @@ const authService = {
         };
     },
 
-    async getAllUsers() {
+    async obtenerTodosUsuarios() {
         // Listar usuarios con el nombre de su rol
         const users = await prisma.usuarios.findMany({
             select: {
@@ -183,7 +183,7 @@ const authService = {
     },
 
     /** Lista solo conductores (excluye ADMIN) */
-    async getDrivers() {
+    async obtenerConductores() {
         return await prisma.usuarios.findMany({
             where: {
                 rol: { nombre: 'CONDUCTOR' }
@@ -209,7 +209,7 @@ const authService = {
     },
 
     /** Lista solo pasajeros (excluye CONDUCTOR y ADMIN) */
-    async getPassengers() {
+    async obtenerPasajeros() {
         return await prisma.usuarios.findMany({
             where: {
                 rol: { nombre: 'PASAJERO' }
@@ -234,21 +234,21 @@ const authService = {
         });
     },
 
-    async updateUser(id, data) {
-        const { password, ...updateData } = data; // Evitar actualizar password aquí directamente
+    async actualizarUsuario(id, data) {
+        const { password, ...datosActualizar } = data; // Evitar actualizar password aquí directamente
 
-       
-        if (updateData.rol && typeof updateData.rol === 'string') {
-            const rolDb = await prisma.roles.findUnique({ where: { nombre: updateData.rol } });
+
+        if (datosActualizar.rol && typeof datosActualizar.rol === 'string') {
+            const rolDb = await prisma.roles.findUnique({ where: { nombre: datosActualizar.rol } });
             if (rolDb) {
-                updateData.idRol = rolDb.idRol;
+                datosActualizar.idRol = rolDb.idRol;
             }
-            delete updateData.rol; // Borramos el string para que no choque con prisma
+            delete datosActualizar.rol; // Borramos el string para que no choque con prisma
         }
 
-        const updatedUser = await prisma.usuarios.update({
+        const usuarioActualizado = await prisma.usuarios.update({
             where: { idUsuarios: parseInt(id) },
-            data: updateData,
+            data: datosActualizar,
             select: {
                 idUsuarios: true,
                 nombre: true,
@@ -258,11 +258,11 @@ const authService = {
                 rol: true
             }
         });
-        return updatedUser;
+        return usuarioActualizado;
     },
 
-    async updateUserStatus(id, estado) {
-        const updatedUser = await prisma.usuarios.update({
+    async actualizarEstadoUsuario(id, estado) {
+        const usuarioActualizado = await prisma.usuarios.update({
             where: { idUsuarios: parseInt(id) },
             data: { estado }, // El enum debe coincidir 'ACTIVO', 'INACTIVO', etc.
             select: {
@@ -271,14 +271,14 @@ const authService = {
                 estado: true
             }
         });
-        return updatedUser;
+        return usuarioActualizado;
     },
 
-    async deleteUser(id) {
-        const deletedUser = await prisma.usuarios.delete({
+    async eliminarUsuario(id) {
+        const usuarioEliminado = await prisma.usuarios.delete({
             where: { idUsuarios: parseInt(id) }
         });
-        return deletedUser;
+        return usuarioEliminado;
     },
 };
 
