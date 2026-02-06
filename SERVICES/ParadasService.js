@@ -4,6 +4,15 @@ const prisma = new PrismaClient();
 const paradasService = {
     // Crear una nueva parada
     async createParada(data) {
+        // Validar que la ruta exista antes de crear la parada
+        const rutaExiste = await prisma.rutas.findUnique({
+            where: { idRuta: parseInt(data.idRuta) }
+        });
+
+        if (!rutaExiste) {
+            throw new Error(`La ruta con ID ${data.idRuta} no existe.`);
+        }
+
         return await prisma.paradas.create({
             data: {
                 idRuta: parseInt(data.idRuta),
