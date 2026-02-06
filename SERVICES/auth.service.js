@@ -3,19 +3,71 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require('dotenv').config();
 
-const prisma = new PrismaClient({
-    // eliminar accelerateUrl si no usas Prisma Accelerate, usar datasources si es necesario, 
-    // o dejar default. Para mysql local suele ser suficiente vacío si .env está bien.
-});
+const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro"; // Fallback por seguridad dev
+const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro"; 
 const JWT_EXPIRES_IN = process.env.EXPIRE_TIME || "1d";
+
+/**
+ * Valida que la contraseña cumpla con requisitos de seguridad
+ * @param {string} password - Contraseña a validar
+ * @returns {object} - { isValid: boleano, errors: string[] }
+ */
+function validarPasswordSegura(password) {
+    const errors = [];
+
+    if (!password) {
+        errors.push("La contraseña es requerida.");
+        return { isValid: false, errors };
+    }
+
+    // Mínimo 8 caracteres
+    if (password.length < 8) {
+        errors.push("La contraseña debe tener al menos 8 caracteres.");
+    }
+
+    // Máximo 128 caracteres (para evitar ataques DoS)
+    if (password.length > 128) {
+        errors.push("La contraseña no puede tener más de 128 caracteres.");
+    }
+
+    // Al menos una letra mayúscula
+    if (!/[A-Z]/.test(password)) {
+        errors.push("La contraseña debe contener al menos una letra mayúscula.");
+    }
+
+    // Al menos una letra minúscula
+    if (!/[a-z]/.test(password)) {
+        errors.push("La contraseña debe contener al menos una letra minúscula.");
+    }
+
+    // Al menos un número
+    if (!/[0-9]/.test(password)) {
+        errors.push("La contraseña debe contener al menos un número.");
+    }
+
+    // Al menos un carácter especial
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        errors.push("La contraseña debe contener al menos un carácter especial (!@#$%^&*()_+-=[]{}|;':\",./<>?).");
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+}
 
 const authService = {
     async register(data) {
         const { email, password, nombre, telefono, rol } = data;
 
-        // 1. Verificar si el usuario ya existe
+        // 1. Validar contraseña segura
+        const validacionPassword = validarPasswordSegura(password);
+        if (!validacionPassword.isValid) {
+            throw new Error(`Contraseña no válida: ${validacionPassword.errors.join(" ")}`);
+        }
+
+        // 2. Verificar si el usuario ya existe
         const usuarioExiste = await prisma.usuarios.findUnique({
             where: { email },
         });
@@ -25,8 +77,7 @@ const authService = {
         }
 
         // 2. Resolver el Rol (String -> ID)
-        // Buscamos el rol por nombre, si no existe lo creamos (o fallamos, según preferencia)
-        // Para asegurar que funcione "de una", si no existe lo creamos.
+        
         let nombreRol = rol || "PASAJERO";
         let rolDb = await prisma.roles.findUnique({
             where: { nombre: nombreRol }
@@ -186,9 +237,7 @@ const authService = {
     async updateUser(id, data) {
         const { password, ...updateData } = data; // Evitar actualizar password aquí directamente
 
-        // Si se envía 'rol' como string, habría que buscar el ID, pero por simplicidad
-        // asumimos que updates vienen con datos simples o manejamos eso aparte.
-        // Si el frontend manda 'rol' string y queremos actualizarlo:
+       
         if (updateData.rol && typeof updateData.rol === 'string') {
             const rolDb = await prisma.roles.findUnique({ where: { nombre: updateData.rol } });
             if (rolDb) {
