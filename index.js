@@ -4,10 +4,16 @@ const app = express();
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Rate Limiting Global
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 100, // Límite de 100 peticiones por ventana
+    max: 1000, // Límite de 1000 peticiones por ventana
     message: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -32,14 +38,6 @@ const viajeTramosRoutes = require('./ROUTES/ViajeTramosRoutes');
 const planesConductorRoutes = require('./ROUTES/PlanesConductorRoutes');
 const iaRutasLogRoutes = require('./ROUTES/IaRutasLogRoutes');
 const documentacionRoutes = require('./ROUTES/DocumentacionRoutes');
-//uso de cors
-app.use(cors(
-    {
-        origin: '*',
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization']
-    }
-));
 
 // Usar Rutas
 app.use('/api/auth', authRoutes);
