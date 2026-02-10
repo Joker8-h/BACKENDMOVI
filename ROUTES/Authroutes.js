@@ -29,4 +29,6 @@ router.put('/:id', verfificacion, authorize(['ADMIN']), authController.updateUsu
 router.patch('/:id/estado', verfificacion, authorize(['ADMIN']), authController.cambiarEstadoUsuario);
 router.delete('/:id', verfificacion, authorize(['ADMIN']), authController.eliminarUsuario);
 
+router.get('/usuarios/dia/:dia', verfificacion, authorize(['ADMIN']), authController.getUsuariosPorDia);
+
 module.exports = router;

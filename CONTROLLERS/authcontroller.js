@@ -98,6 +98,16 @@ const authController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
+    },
+
+    async getUsuariosPorDia(req, res) {
+        try {
+            const { dia } = req.params;
+            const users = await authService.obtenerUsuariosPorDiaSemana(dia);
+            res.json(users);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
 
 }
