@@ -1,4 +1,4 @@
-    const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient({
 });
 
@@ -21,7 +21,8 @@ const vehiculosService = {
     // Obtener vehículos de un usuario específico
     async findByUser(idUsuario) {
         return await prisma.vehiculos.findMany({
-            where: { idUsuario: idUsuario, estado: 'ACTIVO' }
+            where: { idUsuario: idUsuario, estado: 'ACTIVO' },
+            include: { usuario: { select: { nombre: true } } }
         });
     },
 
