@@ -7,7 +7,7 @@ const authController = require('../CONTROLLERS/authcontroller.js');
 // Rate Limiting para Login (protección contra fuerza bruta)
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5, // Solo 5 intentos de login por IP
+    max: 20, // Solo 20 intentos de login por IP
     message: 'Demasiados intentos de inicio de sesión. Por favor intente más tarde.',
     standardHeaders: true,
     legacyHeaders: false,
