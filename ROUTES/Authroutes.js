@@ -4,6 +4,8 @@ const rateLimit = require('express-rate-limit');
 const verfificacion = require('../MIDDLEWARE/authmiddleware.js');
 const authController = require('../CONTROLLERS/authcontroller.js');
 
+app.set('trust proxy', 1);
+
 // Rate Limiting para Login (protección contra fuerza bruta)
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos

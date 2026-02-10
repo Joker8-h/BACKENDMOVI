@@ -109,7 +109,7 @@ model Usuarios {
   email        String        @unique @db.VarChar(150)
   telefono     String?       @db.VarChar(20)
   passwordHash String        @db.VarChar(255)
-  fotoPerfil   String      @db.VarChar(255)
+  fotoPerfil   String     @db.VarChar(255)
   estado       EstadoUsuario @default(ACTIVO)
   creadoEn     DateTime      @default(now())
 
