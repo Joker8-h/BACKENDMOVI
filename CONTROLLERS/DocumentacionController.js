@@ -6,12 +6,6 @@ const documentacionController = {
     async upload(req, res) {
         try {
             // Validar autenticación
-            if (!req.usuario || !req.usuario.idUsuarios) {
-                return res.status(401).json({
-                    error: "Usuario no autenticado"
-                });
-            }
-
             const idUsuario = req.user.id;
             const data = req.body;
 
