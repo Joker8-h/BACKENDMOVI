@@ -21,6 +21,7 @@ const authController = {
     async registroFacial(req, res) {
         try {
             const { email, password, nombre, telefono, rol, image } = req.body;
+            console.log("AuthController: Iniciando registro facial para:", email);
 
             if (!image) {
                 return res.status(400).json({ error: "La imagen facial es requerida" });
@@ -29,18 +30,26 @@ const authController = {
             // 1. Subir imagen a Cloudinary desde el Backend (Node)
             let imageUrl;
             try {
+                console.log("AuthController: Llamando a CloudinaryService...");
                 imageUrl = await cloudinaryService.subirImagen(image);
+                console.log("AuthController: URL obtenida de Cloudinary:", imageUrl);
             } catch (cloudError) {
+                console.error("AuthController: Error en subida a Cloudinary:", cloudError.message);
                 return res.status(500).json({ error: "Error al subir la imagen a la nube: " + cloudError.message });
             }
 
             // 2. Registrar usuario en la base de datos local
+            console.log("AuthController: Registrando usuario en DB local...");
             const usuario = await authService.registrar({ email, password, nombre, telefono, rol, fotoPerfil: imageUrl });
+            console.log("AuthController: Usuario registrado con ID:", usuario.idUsuarios);
 
             // 3. Registrar rostro en el servicio externo (enviando la URL de Cloudinary)
             try {
+                console.log("AuthController: Llamando a ReconocimientoService (Python)...");
                 await reconocimientoService.registrarRostro(nombre, null, imageUrl);
+                console.log("AuthController: Rostro registrado en Python exitosamente.");
             } catch (facialError) {
+                console.error("AuthController: Error en registro facial (Python):", facialError.message);
                 // Si falla el facial, informamos (el usuario ya queda creado en DB)
                 return res.status(207).json({
                     mensaje: "Usuario creado pero hubo un problema con el registro facial",
@@ -50,8 +59,10 @@ const authController = {
                 });
             }
 
+            console.log("AuthController: Registro facial completo.");
             res.json({ mensaje: "Registro completo exitoso", usuario, imageUrl });
         } catch (error) {
+            console.error("AuthController: Error general en registro facial:", error.message);
             res.status(400).json({ error: error.message });
         }
     },
