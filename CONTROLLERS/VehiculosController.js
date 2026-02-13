@@ -4,7 +4,7 @@ const vehiculosController = {
     async create(req, res) {
         try {
             const { marca, modelo, placa, capacidad } = req.body;
-          
+
             const idUsuario = req.user.id;
 
             const nuevoVehiculo = await vehiculosService.create({
@@ -48,7 +48,21 @@ const vehiculosController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
+    },
+
+    async cambiarEstado(req, res) {
+        try {
+            const { id } = req.params;
+            const { estado } = req.body;
+            const idUsuario = req.user.id;
+
+            const vehiculoActualizado = await vehiculosService.actualizarEstado(id, idUsuario, estado);
+            res.json({ mensaje: `Vehículo ${estado.toLowerCase()} correctamente`, vehiculo: vehiculoActualizado });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
+};
 };
 
 module.exports = vehiculosController;

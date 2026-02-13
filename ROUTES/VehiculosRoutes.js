@@ -19,4 +19,7 @@ router.get('/', authorize(['ADMIN']), vehiculosController.getAll);
 // Eliminar vehículo
 router.delete('/:id', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.delete);
 
+// Activar/Desactivar vehículo
+router.patch('/:id/estado', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.cambiarEstado);
+
 module.exports = router;
