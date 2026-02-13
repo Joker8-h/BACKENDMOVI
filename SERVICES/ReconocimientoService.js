@@ -27,7 +27,8 @@ const reconocimientoService = {
 
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.detail || "Error en el registro facial");
+                console.error("Detalle del error 422/400 de FastAPI:", JSON.stringify(data, null, 2));
+                throw new Error(data.detail ? JSON.stringify(data.detail) : "Error en el registro facial");
             }
             return data;
         } catch (error) {
