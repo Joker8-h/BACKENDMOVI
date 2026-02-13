@@ -27,4 +27,7 @@ router.post('/:id/cancelar', authorize(['CONDUCTOR', 'ADMIN']), viajesController
 // Ver detalle viaje
 router.get('/:id', viajesController.getById);
 
+// Estadísticas de viajes por día
+router.get('/dia/:dia', authorize(['ADMIN']), viajesController.getViajesPorDia);
+
 module.exports = router;

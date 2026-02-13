@@ -112,6 +112,42 @@ const viajesService = {
                 fechaHoraSalida: 'desc'
             }
         });
+    },
+
+    async obtenerViajesPorDiaSemana(dia) {
+        const diasMapa = {
+            'lunes': 0,
+            'martes': 1,
+            'miercoles': 2,
+            'jueves': 3,
+            'viernes': 4,
+            'sabado': 5,
+            'domingo': 6
+        };
+
+        let diaNum;
+        if (isNaN(dia)) {
+            const diaNormalizado = dia.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            diaNum = diasMapa[diaNormalizado];
+        } else {
+            diaNum = parseInt(dia);
+        }
+
+        if (diaNum === undefined || diaNum < 0 || diaNum > 6) {
+            throw new Error("Día no válido. Use el nombre del día (ej. lunes) o un número del 0 (Lunes) al 6 (Domingo).");
+        }
+
+        // MySQL WEEKDAY() devuelve 0 para lunes, 1 para martes, ..., 6 para domingo
+        // Solo traemos los FINALIZADOS para "viajes realizados"
+        const viajes = await prisma.$queryRaw`
+            SELECT v.*, r.nombre as rutaNombre, ve.placa, ve.marca, ve.modelo
+            FROM Viajes v
+            JOIN Rutas r ON v.idRuta = r.idRuta
+            JOIN Vehiculos ve ON v.idVehiculos = ve.idVehiculos
+            WHERE WEEKDAY(v.fechaHoraSalida) = ${diaNum} AND v.estado = 'FINALIZADO'
+        `;
+
+        return viajes;
     }
 };
 

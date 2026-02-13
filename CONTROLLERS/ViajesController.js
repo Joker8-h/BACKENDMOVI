@@ -73,6 +73,16 @@ const viajesController = {
         }
     },
 
+    async getViajesPorDia(req, res) {
+        try {
+            const { dia } = req.params;
+            const viajes = await viajesService.obtenerViajesPorDiaSemana(dia);
+            res.json(viajes);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
 
 };
 
