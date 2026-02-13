@@ -20,12 +20,15 @@ const reconocimientoService = {
                 throw new Error("Debe proporcionar una imagen o una URL");
             }
 
+            console.log(`Enviando petición a Python: ${RECONOCIMIENTO_URL}/register-face para el usuario: ${nombre}`);
             const response = await fetch(`${RECONOCIMIENTO_URL}/register-face`, {
                 method: "POST",
                 body: formData,
             });
 
             const data = await response.json();
+            console.log("Respuesta de Python (Registro):", JSON.stringify(data, null, 2));
+
             if (!response.ok) {
                 console.error("Detalle del error 422/400 de FastAPI:", JSON.stringify(data, null, 2));
                 throw new Error(data.detail ? JSON.stringify(data.detail) : "Error en el registro facial");
@@ -55,13 +58,17 @@ const reconocimientoService = {
                 throw new Error("Debe proporcionar una imagen o una URL");
             }
 
+            console.log(`Enviando petición a Python: ${RECONOCIMIENTO_URL}/verify-face`);
             const response = await fetch(`${RECONOCIMIENTO_URL}/verify-face`, {
                 method: "POST",
                 body: formData,
             });
 
             const data = await response.json();
+            console.log("Respuesta de Python (Verificación):", JSON.stringify(data, null, 2));
+
             if (!response.ok) {
+                console.error("Detalle del error de FastAPI (Verify):", JSON.stringify(data, null, 2));
                 throw new Error(data.detail || "Rostro no reconocido");
             }
             return data;
