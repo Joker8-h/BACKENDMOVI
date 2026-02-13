@@ -29,7 +29,7 @@ router.get('/', verfificacion, authorize(['ADMIN']), authController.getUsuarios)
 router.get('/conductores', verfificacion, authorize(['ADMIN']), authController.getConductores);
 router.get('/pasajeros', verfificacion, authorize(['ADMIN']), authController.getPasajeros);
 
-router.put('/:id', verfificacion, authorize(['ADMIN']), authController.updateUsuario);
+router.put('/:id', verfificacion, authorize(['ADMIN,PASAJERO,CONDUCTOR']), authController.updateUsuario);
 router.patch('/:id/estado', verfificacion, authorize(['ADMIN']), authController.cambiarEstadoUsuario);
 router.delete('/:id', verfificacion, authorize(['ADMIN']), authController.eliminarUsuario);
 
