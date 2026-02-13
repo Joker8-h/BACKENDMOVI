@@ -1,5 +1,6 @@
 const authService = require("../SERVICES/auth.service.js");
 const reconocimientoService = require("../SERVICES/ReconocimientoService.js");
+const cloudinaryService = require("../SERVICES/CloudinaryService.js");
 
 const authController = {
     async register(req, res) {
@@ -25,23 +26,31 @@ const authController = {
                 return res.status(400).json({ error: "La imagen facial es requerida" });
             }
 
-            // 1. Registrar usuario en la base de datos local
+            // 1. Subir imagen a Cloudinary desde el Backend (Node)
+            let imageUrl;
+            try {
+                imageUrl = await cloudinaryService.subirImagen(image);
+            } catch (cloudError) {
+                return res.status(500).json({ error: "Error al subir la imagen a la nube: " + cloudError.message });
+            }
+
+            // 2. Registrar usuario en la base de datos local
             const usuario = await authService.registrar({ email, password, nombre, telefono, rol });
 
-            // 2. Registrar rostro en el servicio externo (usa el nombre como identificador)
+            // 3. Registrar rostro en el servicio externo (enviando la URL de Cloudinary)
             try {
-                await reconocimientoService.registrarRostro(nombre, image);
+                await reconocimientoService.registrarRostro(nombre, null, imageUrl);
             } catch (facialError) {
-                // Si falla el facial, podrías optar por borrar el usuario o informar del error
-                // Por ahora informamos, pero el usuario ya quedó creado en DB
+                // Si falla el facial, informamos (el usuario ya queda creado en DB)
                 return res.status(207).json({
                     mensaje: "Usuario creado pero hubo un problema con el registro facial",
                     usuario,
+                    imageUrl,
                     facialError: facialError.message
                 });
             }
 
-            res.json({ mensaje: "Registro completo exitoso", usuario });
+            res.json({ mensaje: "Registro completo exitoso", usuario, imageUrl });
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
@@ -76,8 +85,12 @@ const authController = {
                 return res.status(400).json({ error: "Imagen requerida" });
             }
 
-            // 1. Verificar rostro en el servicio externo
-            const facialData = await reconocimientoService.verificarRostro(image);
+            // 1. Verificar rostro en el servicio externo (podemos enviar base64 directamente o subir a Cloudinary temporalmente)
+            // Para login, a veces es más rápido enviar base64 si no queremos guardar la foto de cada login.
+            // Pero si el servicio de Python descarga de Cloudinary, es mejor subirla.
+            const imageUrl = await cloudinaryService.subirImagen(image, "temp_login");
+
+            const facialData = await reconocimientoService.verificarRostro(null, imageUrl);
 
             // 2. loginFacial en authService usando el ID retornado por el servicio facial
             // Nota: El servicio facial retorna user_id que debería coincidir con idUsuarios
