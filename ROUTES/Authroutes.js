@@ -18,7 +18,7 @@ router.post('/login', loginLimiter, authController.login);
 
 // Rutas de Reconocimiento Facial
 router.post('/registro-facial', authController.registroFacial);
-router.post('/login-facial', authController.loginFacial);
+router.post('/login-facial', loginLimiter, authController.loginFacial);
 
 const authorize = require('../MIDDLEWARE/role.middleware.js');
 
