@@ -1,4 +1,5 @@
 const authService = require("../SERVICES/auth.service.js");
+const reconocimientoService = require("../SERVICES/ReconocimientoService.js");
 
 const authController = {
     async register(req, res) {
@@ -15,6 +16,37 @@ const authController = {
             res.status(400).json({ error: error.message });
         }
     },
+
+    async registroFacial(req, res) {
+        try {
+            const { email, password, nombre, telefono, rol, image } = req.body;
+
+            if (!image) {
+                return res.status(400).json({ error: "La imagen facial es requerida" });
+            }
+
+            // 1. Registrar usuario en la base de datos local
+            const usuario = await authService.registrar({ email, password, nombre, telefono, rol });
+
+            // 2. Registrar rostro en el servicio externo (usa el nombre como identificador)
+            try {
+                await reconocimientoService.registrarRostro(nombre, image);
+            } catch (facialError) {
+                // Si falla el facial, podrías optar por borrar el usuario o informar del error
+                // Por ahora informamos, pero el usuario ya quedó creado en DB
+                return res.status(207).json({
+                    mensaje: "Usuario creado pero hubo un problema con el registro facial",
+                    usuario,
+                    facialError: facialError.message
+                });
+            }
+
+            res.json({ mensaje: "Registro completo exitoso", usuario });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
     async login(req, res) {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -34,6 +66,31 @@ const authController = {
 
         } catch (error) {
             res.json({ error: error.message });
+        }
+    },
+
+    async loginFacial(req, res) {
+        try {
+            const { image } = req.body;
+            if (!image) {
+                return res.status(400).json({ error: "Imagen requerida" });
+            }
+
+            // 1. Verificar rostro en el servicio externo
+            const facialData = await reconocimientoService.verificarRostro(image);
+
+            // 2. loginFacial en authService usando el ID retornado por el servicio facial
+            // Nota: El servicio facial retorna user_id que debería coincidir con idUsuarios
+            const resultado = await authService.loginFacial(facialData.user_id);
+
+            res.json({
+                mensaje: "Inicio de sesión facial exitoso",
+                usuario: resultado.usuario,
+                token: resultado.token
+            });
+
+        } catch (error) {
+            res.status(401).json({ error: error.message });
         }
     },
 

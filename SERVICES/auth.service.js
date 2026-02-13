@@ -158,6 +158,46 @@ const authService = {
         };
     },
 
+    async buscarPorNombre(nombre) {
+        return await prisma.usuarios.findFirst({
+            where: { nombre },
+            include: { rol: true }
+        });
+    },
+
+    async loginFacial(idUsuarios) {
+        const usuario = await prisma.usuarios.findUnique({
+            where: { idUsuarios: parseInt(idUsuarios) },
+            include: { rol: true }
+        });
+
+        if (!usuario) {
+            throw new Error("Usuario no encontrado.");
+        }
+
+        if (usuario.estado !== "ACTIVO") {
+            throw new Error("Usuario inactivo o suspendido.");
+        }
+
+        const token = jwt.sign(
+            {
+                id: usuario.idUsuarios,
+                email: usuario.email,
+                idRol: usuario.idRol,
+                rol: usuario.rol.nombre
+            },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        const { passwordHash: _, ...usuarioSinPassword } = usuario;
+
+        return {
+            usuario: usuarioSinPassword,
+            token,
+        };
+    },
+
     async obtenerTodosUsuarios() {
         // Listar usuarios con el nombre de su rol
         const users = await prisma.usuarios.findMany({
