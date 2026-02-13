@@ -20,19 +20,19 @@ const reconocimientoService = {
                 throw new Error("Debe proporcionar una imagen o una URL");
             }
 
-            console.log(`Enviando petición a Python: ${RECONOCIMIENTO_URL}/register-face para el usuario: ${nombre}`);
             const response = await fetch(`${RECONOCIMIENTO_URL}/register-face`, {
                 method: "POST",
                 body: formData,
             });
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Error de Python (Status ${response.status}):`, errorText);
+                throw new Error(`Error ${response.status} en registro facial: ${errorText.substring(0, 100)}`);
+            }
+
             const data = await response.json();
             console.log("Respuesta de Python (Registro):", JSON.stringify(data, null, 2));
-
-            if (!response.ok) {
-                console.error("Detalle del error 422/400 de FastAPI:", JSON.stringify(data, null, 2));
-                throw new Error(data.detail ? JSON.stringify(data.detail) : "Error en el registro facial");
-            }
             return data;
         } catch (error) {
             console.error("Error en registrarRostro:", error);
@@ -64,13 +64,14 @@ const reconocimientoService = {
                 body: formData,
             });
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Error de Python (Status ${response.status}):`, errorText);
+                throw new Error(`El servicio de reconocimiento facial devolvió un error ${response.status}: ${errorText.substring(0, 100)}`);
+            }
+
             const data = await response.json();
             console.log("Respuesta de Python (Verificación):", JSON.stringify(data, null, 2));
-
-            if (!response.ok) {
-                console.error("Detalle del error de FastAPI (Verify):", JSON.stringify(data, null, 2));
-                throw new Error(data.detail || "Rostro no reconocido");
-            }
             return data;
         } catch (error) {
             console.error("Error en verificarRostro:", error);
