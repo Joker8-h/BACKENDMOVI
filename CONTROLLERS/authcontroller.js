@@ -35,7 +35,7 @@ const authController = {
             }
 
             // 2. Registrar usuario en la base de datos local
-            const usuario = await authService.registrar({ email, password, nombre, telefono, rol });
+            const usuario = await authService.registrar({ email, password, nombre, telefono, rol, fotoPerfil: imageUrl });
 
             // 3. Registrar rostro en el servicio externo (enviando la URL de Cloudinary)
             try {

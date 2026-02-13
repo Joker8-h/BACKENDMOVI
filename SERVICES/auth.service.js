@@ -59,7 +59,7 @@ function validarPasswordSegura(password) {
 
 const authService = {
     async registrar(data) {
-        const { email, password, nombre, telefono, rol } = data;
+        const { email, password, nombre, telefono, rol, fotoPerfil } = data;
 
         // 1. Validar contraseña segura
         const validacionPassword = validarPasswordSegura(password);
@@ -101,6 +101,7 @@ const authService = {
                 passwordHash,
                 nombre,
                 telefono,
+                fotoPerfil,
                 idRol: rolDb.idRol, // Usamos el ID del rol encontrado/creado
                 estado: "ACTIVO",
             },
