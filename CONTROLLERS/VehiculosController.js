@@ -63,6 +63,5 @@ const vehiculosController = {
         }
     }
 };
-};
 
 module.exports = vehiculosController;
