@@ -33,21 +33,28 @@ const vehiculosService = {
         });
     },
 
-    // Eliminar (lógicamente) un vehículo
-    async delete(idVehiculo, idUsuario) {
-        // Verificar que el vehículo pertenezca al usuario o sea admin
+    // Eliminar un vehículo (Soporta lógico y físico)
+    async delete(idVehiculo, idUsuario, userRole, physical = false) {
+        // Verificar existencia
         const vehiculo = await prisma.vehiculos.findUnique({
             where: { idVehiculos: parseInt(idVehiculo) }
         });
 
         if (!vehiculo) throw new Error("Vehículo no encontrado");
 
-        // Si el usuario no es el dueño (nota: validación de rol admin se haría antes o aquí si se pasa el rol)
-        if (vehiculo.idUsuario !== idUsuario) {
-            // Aquí podríamos permitir si es admin, pero por ahora solo dueño
-            // Si se requiere lógica admin, pasar rol al service
+        // Validar permisos: Debe ser el dueño o ADMIN
+        if (vehiculo.idUsuario !== idUsuario && userRole !== 'ADMIN') {
+            throw new Error("No tienes permiso para eliminar este vehículo");
         }
 
+        if (physical) {
+            // Eliminación física
+            return await prisma.vehiculos.delete({
+                where: { idVehiculos: parseInt(idVehiculo) }
+            });
+        }
+
+        // Eliminación lógica (por defecto)
         return await prisma.vehiculos.update({
             where: { idVehiculos: parseInt(idVehiculo) },
             data: { estado: 'INACTIVO' }

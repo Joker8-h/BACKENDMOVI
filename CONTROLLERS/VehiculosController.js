@@ -43,8 +43,11 @@ const vehiculosController = {
         try {
             const { id } = req.params;
             const idUsuario = req.user.id;
-            await vehiculosService.delete(id, idUsuario);
-            res.json({ message: "Vehículo eliminado correctamente" });
+            const userRole = req.user.rol;
+            const physical = req.query.physical === 'true';
+
+            await vehiculosService.delete(id, idUsuario, userRole, physical);
+            res.json({ message: `Vehículo ${physical ? 'eliminado permanentemente' : 'desactivado'} correctamente` });
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
