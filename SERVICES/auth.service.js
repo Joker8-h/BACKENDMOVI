@@ -115,6 +115,31 @@ const authService = {
         return usuarioSinPassword;
     },
 
+    async buscarPorEmailONombre(email, nombre) {
+        let usuario = null;
+
+        if (email) {
+            usuario = await prisma.usuarios.findUnique({
+                where: { email },
+                include: { rol: true }
+            });
+        }
+
+        if (!usuario && nombre) {
+            usuario = await prisma.usuarios.findFirst({
+                where: { nombre },
+                include: { rol: true }
+            });
+        }
+
+        if (!usuario) {
+            return null;
+        }
+
+        const { passwordHash: _, ...usuarioSinPassword } = usuario;
+        return usuarioSinPassword;
+    },
+
     async iniciarSesion(email, password) {
         // Buscar usuario e incluir su Rol
         const usuario = await prisma.usuarios.findUnique({
