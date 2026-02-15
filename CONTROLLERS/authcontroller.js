@@ -30,6 +30,30 @@ const authController = {
                 console.log("AuthController: Usando URL de foto proporcionada:", imageUrl);
             }
 
+            // --- NUEVO: Detección de duplicados faciales ---
+            if (imageUrl) {
+                try {
+                    console.log("AuthController: Buscando duplicados para la nueva foto...");
+                    const fotosExistentes = await authService.obtenerTodasLasFotos();
+
+                    if (fotosExistentes.length > 0) {
+                        const duplicateCheck = await reconocimientoService.detectarDuplicado(imageUrl, fotosExistentes);
+
+                        if (duplicateCheck.matchFound) {
+                            console.log("AuthController: ¡Rostro duplicado detectado!");
+                            return res.status(400).json({
+                                error: "Este rostro ya está registrado con otra cuenta. No se permiten registros duplicados."
+                            });
+                        }
+                    }
+                } catch (dupError) {
+                    console.error("AuthController: Error al verificar duplicados (no bloqueante):", dupError.message);
+                    // Decidimos si bloquear o no el registro si el servicio de Python falla. 
+                    // Por ahora, dejamos que continúe para no afectar la disponibilidad.
+                }
+            }
+            // ----------------------------------------------
+
             // Registrar usuario (con o sin foto)
             const usuario = await authService.registrar({
                 email,

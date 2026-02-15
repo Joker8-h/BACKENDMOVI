@@ -113,6 +113,27 @@ const reconocimientoService = {
             console.error("Error en compararRostros:", error);
             throw new Error("Error al comparar rostros: " + error.message);
         }
+    },
+
+    async detectarDuplicado(targetUrl, candidateUrls) {
+        try {
+            console.log(`ReconocimientoService: Buscando duplicado para ${targetUrl} entre ${candidateUrls.length} candidatos...`);
+            const response = await fetch(`${RECONOCIMIENTO_URL}/find-match`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ targetUrl, candidateUrls }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "Error en el servicio de detección de duplicados");
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error("ReconocimientoService: Error al detectar duplicado:", error.message);
+            throw error;
+        }
     }
 };
 

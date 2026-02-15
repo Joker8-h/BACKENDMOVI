@@ -386,6 +386,18 @@ const authService = {
 
         return usuarios;
     },
+
+    async obtenerTodasLasFotos() {
+        const usuarios = await prisma.usuarios.findMany({
+            where: {
+                fotoPerfil: { not: null }
+            },
+            select: {
+                fotoPerfil: true
+            }
+        });
+        return usuarios.map(u => u.fotoPerfil).filter(url => url !== null);
+    },
 };
 
 module.exports = authService;
