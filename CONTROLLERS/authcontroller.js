@@ -5,15 +5,48 @@ const cloudinaryService = require("../SERVICES/CloudinaryService.js");
 const authController = {
     async register(req, res) {
         try {
-            const { email, password, nombre, telefono, rol } = req.body;
+            const { email, password, nombre, telefono, rol, image, faceImageUrl } = req.body;
 
             if (!email || !password || !nombre) {
                 return res.status(400).json({ error: "Faltan campos obligatorios: email, password y nombre son requeridos" });
             }
 
-            const usuario = await authService.registrar({ email, password, nombre, telefono, rol });
-            res.json(usuario);
+            console.log("AuthController: Registro para:", email, "| Con foto:", !!(image || faceImageUrl));
+
+            // Manejo OPCIONAL de foto facial
+            let imageUrl = faceImageUrl;
+
+            // Si hay image (base64) pero no faceImageUrl, subir a Cloudinary
+            if (!imageUrl && image) {
+                try {
+                    console.log("AuthController: Subiendo imagen a Cloudinary...");
+                    imageUrl = await cloudinaryService.subirImagen(image);
+                    console.log("AuthController: URL de foto obtenida:", imageUrl);
+                } catch (cloudError) {
+                    console.error("AuthController: Error al subir foto (no crítico):", cloudError.message);
+                    // No fallar el registro si falla la foto
+                }
+            } else if (imageUrl) {
+                console.log("AuthController: Usando URL de foto proporcionada:", imageUrl);
+            }
+
+            // Registrar usuario (con o sin foto)
+            const usuario = await authService.registrar({
+                email,
+                password,
+                nombre,
+                telefono,
+                rol,
+                fotoPerfil: imageUrl || null
+            });
+
+            res.json({
+                mensaje: "Registro exitoso",
+                usuario,
+                fotoUrl: imageUrl || null
+            });
         } catch (error) {
+            console.error("AuthController: Error en registro:", error.message);
             res.status(400).json({ error: error.message });
         }
     },
