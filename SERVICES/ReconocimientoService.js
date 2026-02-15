@@ -100,6 +100,10 @@ const reconocimientoService = {
 
     async detectarDuplicado(targetUrl, candidateUrls) {
         try {
+            console.log(`DEBUG: Detectando duplicado.`);
+            console.log(`DEBUG: Target: ${targetUrl}`);
+            console.log(`DEBUG: Candidates Count: ${candidateUrls.length}`);
+
             const response = await fetch(`${RECONOCIMIENTO_URL}/find-match`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -108,11 +112,15 @@ const reconocimientoService = {
 
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error("DEBUG: Error respuesta Python:", errorData);
                 throw new Error(errorData.detail || "Error en detección de duplicados");
             }
 
-            return await response.json();
+            const result = await response.json();
+            console.log("DEBUG: Resultado duplicado:", result);
+            return result;
         } catch (error) {
+            console.error("ReconocimientoService: Error al detectar duplicado:", error.message);
             throw error;
         }
     }
