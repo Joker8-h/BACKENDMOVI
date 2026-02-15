@@ -61,6 +61,9 @@ const authService = {
     async registrar(data) {
         const { email, password, nombre, telefono, rol, fotoPerfil } = data;
 
+        console.log("DEBUG authService.registrar - fotoPerfil recibido:", fotoPerfil);
+        console.log("DEBUG authService.registrar - Longitud de fotoPerfil:", fotoPerfil ? fotoPerfil.length : 0);
+
         // 1. Validar contraseña segura
         const validacionPassword = validarPasswordSegura(password);
         if (!validacionPassword.isValid) {
@@ -95,6 +98,7 @@ const authService = {
         const passwordHash = await bcrypt.hash(password, salt);
 
         // 4. Crear usuario
+        console.log("DEBUG authService.registrar - Creando usuario con fotoPerfil:", fotoPerfil);
         const newUsuario = await prisma.usuarios.create({
             data: {
                 email,
@@ -109,6 +113,8 @@ const authService = {
                 rol: true // Para devolver el nombre del rol
             }
         });
+
+        console.log("DEBUG authService.registrar - Usuario creado. fotoPerfil guardado:", newUsuario.fotoPerfil);
 
         // 5. Retornar sin password
         const { passwordHash: _, ...usuarioSinPassword } = newUsuario;
