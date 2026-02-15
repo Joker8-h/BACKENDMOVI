@@ -93,12 +93,9 @@ const authService = {
             });
         }
 
-        // 3. Hashear la contraseña
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
-        // 4. Crear usuario
-        console.log("DEBUG authService.registrar - Creando usuario con fotoPerfil:", fotoPerfil);
         const newUsuario = await prisma.usuarios.create({
             data: {
                 email,
@@ -106,11 +103,11 @@ const authService = {
                 nombre,
                 telefono,
                 fotoPerfil,
-                idRol: rolDb.idRol, // Usamos el ID del rol encontrado/creado
+                idRol: rolDb.idRol,
                 estado: "ACTIVO",
             },
             include: {
-                rol: true // Para devolver el nombre del rol
+                rol: true
             }
         });
 
@@ -397,6 +394,13 @@ const authService = {
             }
         });
         return usuarios.map(u => u.fotoPerfil).filter(url => url !== null);
+    },
+
+    async buscarPorFoto(fotoUrl) {
+        return await prisma.usuarios.findFirst({
+            where: { fotoPerfil: fotoUrl },
+            include: { rol: true }
+        });
     },
 };
 

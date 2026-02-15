@@ -80,44 +80,26 @@ const reconocimientoService = {
     },
 
     async compararRostros(imageUrl1, imageUrl2) {
-        if (typeof fetch === 'undefined') {
-            throw new Error("La función 'fetch' no está disponible.");
-        }
-
         try {
-            console.log(`Enviando petición a Python: ${RECONOCIMIENTO_URL}/compare-faces`);
-            console.log(`  URL 1 (almacenada): ${imageUrl1}`);
-            console.log(`  URL 2 (actual): ${imageUrl2}`);
-
             const response = await fetch(`${RECONOCIMIENTO_URL}/compare-faces`, {
                 method: "POST",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    imageUrl1: imageUrl1,
-                    imageUrl2: imageUrl2
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl1, imageUrl2 })
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`Error de Python (Status ${response.status}):`, errorText);
-                throw new Error(`Error ${response.status} al comparar rostros: ${errorText.substring(0, 100)}`);
+                throw new Error(`Error ${response.status}: ${errorText.substring(0, 100)}`);
             }
 
-            const data = await response.json();
-            console.log("Respuesta de Python (Comparación):", JSON.stringify(data, null, 2));
-            return data;
+            return await response.json();
         } catch (error) {
-            console.error("Error en compararRostros:", error);
             throw new Error("Error al comparar rostros: " + error.message);
         }
     },
 
     async detectarDuplicado(targetUrl, candidateUrls) {
         try {
-            console.log(`ReconocimientoService: Buscando duplicado para ${targetUrl} entre ${candidateUrls.length} candidatos...`);
             const response = await fetch(`${RECONOCIMIENTO_URL}/find-match`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -126,12 +108,11 @@ const reconocimientoService = {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || "Error en el servicio de detección de duplicados");
+                throw new Error(errorData.detail || "Error en detección de duplicados");
             }
 
             return await response.json();
         } catch (error) {
-            console.error("ReconocimientoService: Error al detectar duplicado:", error.message);
             throw error;
         }
     }

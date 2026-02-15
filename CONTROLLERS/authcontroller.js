@@ -11,50 +11,32 @@ const authController = {
                 return res.status(400).json({ error: "Faltan campos obligatorios: email, password y nombre son requeridos" });
             }
 
-            console.log("AuthController: Registro para:", email, "| Con foto:", !!(image || faceImageUrl));
-
-            // Manejo OPCIONAL de foto facial
             let imageUrl = faceImageUrl;
 
-            // Si hay image (base64) pero no faceImageUrl, subir a Cloudinary
             if (!imageUrl && image) {
                 try {
-                    console.log("AuthController: Subiendo imagen a Cloudinary...");
                     imageUrl = await cloudinaryService.subirImagen(image);
-                    console.log("AuthController: URL de foto obtenida:", imageUrl);
                 } catch (cloudError) {
-                    console.error("AuthController: Error al subir foto (no crítico):", cloudError.message);
-                    // No fallar el registro si falla la foto
+                    console.error("Error al subir foto:", cloudError.message);
                 }
-            } else if (imageUrl) {
-                console.log("AuthController: Usando URL de foto proporcionada:", imageUrl);
             }
 
-            // --- NUEVO: Detección de duplicados faciales ---
             if (imageUrl) {
                 try {
-                    console.log("AuthController: Buscando duplicados para la nueva foto...");
                     const fotosExistentes = await authService.obtenerTodasLasFotos();
-
                     if (fotosExistentes.length > 0) {
                         const duplicateCheck = await reconocimientoService.detectarDuplicado(imageUrl, fotosExistentes);
-
                         if (duplicateCheck.matchFound) {
-                            console.log("AuthController: ¡Rostro duplicado detectado!");
                             return res.status(400).json({
                                 error: "Este rostro ya está registrado con otra cuenta. No se permiten registros duplicados."
                             });
                         }
                     }
                 } catch (dupError) {
-                    console.error("AuthController: Error al verificar duplicados (no bloqueante):", dupError.message);
-                    // Decidimos si bloquear o no el registro si el servicio de Python falla. 
-                    // Por ahora, dejamos que continúe para no afectar la disponibilidad.
+                    console.error("Error al verificar duplicados:", dupError.message);
                 }
             }
-            // ----------------------------------------------
 
-            // Registrar usuario (con o sin foto)
             const usuario = await authService.registrar({
                 email,
                 password,
@@ -70,7 +52,6 @@ const authController = {
                 fotoUrl: imageUrl || null
             });
         } catch (error) {
-            console.error("AuthController: Error en registro:", error.message);
             res.status(400).json({ error: error.message });
         }
     },
@@ -79,67 +60,47 @@ const authController = {
         try {
             const { email, password, image, faceImageUrl, nombre } = req.body;
 
-            // Si hay imagen → Login Facial
             if (image || faceImageUrl) {
-                console.log("AuthController: Login FACIAL para:", email || nombre);
-
-                if (!email && !nombre) {
-                    return res.status(400).json({ error: "Debe proporcionar email o nombre para el login facial" });
-                }
-
-                // 1. Buscar usuario en la base de datos
-                const usuario = await authService.buscarPorEmailONombre(email, nombre);
-
-                if (!usuario) {
-                    return res.status(404).json({ error: "Usuario no encontrado" });
-                }
-
-                if (!usuario.fotoPerfil) {
-                    return res.status(400).json({ error: "Este usuario no tiene foto de perfil registrada" });
-                }
-
-                console.log("AuthController: Usuario encontrado:", usuario.nombre);
-                console.log("AuthController: Foto almacenada:", usuario.fotoPerfil);
-
-                // 2. Obtener URL de la imagen actual
                 let imageUrlActual = faceImageUrl;
+
                 if (!imageUrlActual && image) {
-                    console.log("AuthController: Subiendo imagen de login a Cloudinary...");
                     imageUrlActual = await cloudinaryService.subirImagen(image, "temp_login");
                 }
-                console.log("AuthController: URL de imagen actual:", imageUrlActual);
 
-                // 3. Comparar rostros usando Python
-                console.log("AuthController: Comparando rostros...");
-                const resultado = await reconocimientoService.compararRostros(usuario.fotoPerfil, imageUrlActual);
+                let usuarioEncontrado = null;
 
-                if (!resultado.match) {
-                    console.log("AuthController: Rostros no coinciden. Distance:", resultado.distance);
-                    return res.status(401).json({ error: "Rostro no reconocido" });
+                if (email || nombre) {
+                    usuarioEncontrado = await authService.buscarPorEmailONombre(email, nombre);
+                    if (!usuarioEncontrado) return res.status(404).json({ error: "Usuario no encontrado" });
+                    if (!usuarioEncontrado.fotoPerfil) return res.status(400).json({ error: "Este usuario no tiene foto de perfil registrada" });
+
+                    const resultado = await reconocimientoService.compararRostros(usuarioEncontrado.fotoPerfil, imageUrlActual);
+                    if (!resultado.match) return res.status(401).json({ error: "Rostro no reconocido" });
+                } else {
+                    const fotosExistentes = await authService.obtenerTodasLasFotos();
+                    if (fotosExistentes.length === 0) return res.status(400).json({ error: "No hay rostros registrados en el sistema" });
+
+                    const searchResult = await reconocimientoService.detectarDuplicado(imageUrlActual, fotosExistentes);
+                    if (!searchResult.matchFound) return res.status(401).json({ error: "Rostro no reconocido en el sistema" });
+
+                    usuarioEncontrado = await authService.buscarPorFoto(searchResult.matchedUrl);
+                    if (!usuarioEncontrado) return res.status(404).json({ error: "No se encontró el usuario para este rostro" });
                 }
 
-                console.log("AuthController: Rostros coinciden! Generando token...");
-                const tokenData = await authService.loginFacial(usuario.idUsuarios);
-
+                const tokenData = await authService.loginFacial(usuarioEncontrado.idUsuarios);
                 return res.json({
                     mensaje: "Inicio de sesión facial exitoso",
                     usuario: tokenData.usuario,
-                    token: tokenData.token,
-                    matchDistance: resultado.distance
+                    token: tokenData.token
                 });
             }
-
-            // Si NO hay imagen → Login Normal (email + password)
-            console.log("AuthController: Login NORMAL para:", email);
 
             if (!email || !password) {
                 return res.status(400).json({ error: "Email y contraseña son obligatorios" });
             }
 
             const resultado = await authService.iniciarSesion(email, password);
-            if (!resultado) {
-                return res.status(401).json({ error: "Credenciales inválidas" });
-            }
+            if (!resultado) return res.status(401).json({ error: "Credenciales inválidas" });
 
             return res.json({
                 mensaje: "Inicio de sesión exitoso",
@@ -148,7 +109,6 @@ const authController = {
             });
 
         } catch (error) {
-            console.error("AuthController: Error en login:", error.message);
             res.status(401).json({ error: error.message });
         }
     },
