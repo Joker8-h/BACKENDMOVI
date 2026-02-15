@@ -20,31 +20,45 @@ const authController = {
 
     async registroFacial(req, res) {
         try {
-            const { email, password, nombre, telefono, rol, image } = req.body;
+            const { email, password, nombre, telefono, rol, image, faceImageUrl } = req.body;
             console.log("AuthController: Iniciando registro facial para:", email);
 
-            if (!image) {
-                return res.status(400).json({ error: "La imagen facial es requerida" });
+            // Si el móvil ya subió a Cloudinary, usar esa URL directamente
+            let imageUrl = faceImageUrl;
+
+            // Si no hay faceImageUrl, verificar que haya image (base64)
+            if (!imageUrl && !image) {
+                return res.status(400).json({ error: "La imagen facial es requerida (image o faceImageUrl)" });
             }
 
-            // 1. Subir imagen a Cloudinary
-            let imageUrl;
-            try {
-                console.log("AuthController: Llamando a CloudinaryService...");
-                imageUrl = await cloudinaryService.subirImagen(image);
-                console.log("AuthController: URL obtenida de Cloudinary:", imageUrl);
-            } catch (cloudError) {
-                console.error("AuthController: Error en subida a Cloudinary:", cloudError.message);
-                return res.status(500).json({ error: "Error al subir la imagen a la nube: " + cloudError.message });
+            // Si hay image pero no faceImageUrl, subir a Cloudinary
+            if (!imageUrl && image) {
+                try {
+                    console.log("AuthController: Llamando a CloudinaryService...");
+                    imageUrl = await cloudinaryService.subirImagen(image);
+                    console.log("AuthController: URL obtenida de Cloudinary:", imageUrl);
+                } catch (cloudError) {
+                    console.error("AuthController: Error en subida a Cloudinary:", cloudError.message);
+                    return res.status(500).json({ error: "Error al subir la imagen a la nube: " + cloudError.message });
+                }
+            } else {
+                console.log("AuthController: Usando URL de Cloudinary del móvil:", imageUrl);
             }
 
-            // 2. Registrar usuario en la base de datos con la URL de la foto
+            // Registrar usuario en la base de datos con la URL de la foto
             console.log("AuthController: Registrando usuario en DB con foto...");
-            const usuario = await authService.registrar({ email, password, nombre, telefono, rol, fotoPerfil: imageUrl });
+            const usuario = await authService.registrar({
+                email,
+                password,
+                nombre,
+                telefono,
+                rol,
+                fotoPerfil: imageUrl
+            });
             console.log("AuthController: Usuario registrado con ID:", usuario.idUsuarios);
 
             console.log("AuthController: Registro facial completo.");
-            res.json({ mensaje: "Registro exitoso", usuario, imageUrl });
+            res.json({ mensaje: "Registro exitoso", usuario, fotoUrl: imageUrl });
         } catch (error) {
             console.error("AuthController: Error general en registro facial:", error.message);
             res.status(400).json({ error: error.message });
