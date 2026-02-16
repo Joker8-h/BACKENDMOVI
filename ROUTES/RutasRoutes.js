@@ -10,7 +10,7 @@ router.use(verificarToken);
 router.post('/', authorize(['ADMIN', 'CONDUCTOR']), rutasController.create);
 
 // Agregar parada a ruta: ADMIN y CONDUCTOR
-router.post('/:id/paradas', authorize(['ADMIN','CONDUCTOR','PASAJERO']), rutasController.addParada);
+router.post('/:id/paradas', authorize(['ADMIN', 'CONDUCTOR', 'PASAJERO']), rutasController.addParada);
 
 // Listar rutas: Público (Autenticado)
 router.get('/', rutasController.getAll);
@@ -25,6 +25,6 @@ router.get('/:id', rutasController.getById);
 router.put('/:id', authorize(['ADMIN', 'CONDUCTOR']), rutasController.update);
 
 // Eliminar ruta
-router.delete('/:id', authorize(['ADMIN','CONDUCTOR']), rutasController.delete);
+router.delete('/:id', authorize(['ADMIN', 'CONDUCTOR']), rutasController.delete);
 
 module.exports = router;

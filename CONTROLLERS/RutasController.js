@@ -68,6 +68,16 @@ const rutasController = {
         } catch (error) {
             res.json({ error: error.message });
         }
+    },
+
+    async getOptimizedRoutes(req, res) {
+        try {
+            const { origin, destination, preference, k } = req.body;
+            const rutas = await rutasService.calcularRutasOptimas(origin, destination, preference, k);
+            res.json(rutas);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

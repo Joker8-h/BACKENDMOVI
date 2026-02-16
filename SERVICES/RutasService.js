@@ -171,6 +171,34 @@ const rutasService = {
                 }
             }
         });
+    },
+
+    async calcularRutasOptimas(origen, destino, preferencia = 'FASTEST', k = 3) {
+        const RUTAS_PYTHON_URL = process.env.RUTAS_PYTHON_URL || 'http://localhost:8000';
+        try {
+            const response = await fetch(`${RUTAS_PYTHON_URL}/route-options`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    origin: origen,
+                    destination: destino,
+                    preference: preferencia,
+                    k: k
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error en el servicio de rutas Python');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error al conectar con rutaspython:', error.message);
+            throw error;
+        }
     }
 };
 
