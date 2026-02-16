@@ -3,10 +3,19 @@ const rutasService = require("../SERVICES/RutasService");
 const rutasController = {
     async create(req, res) {
         try {
+            const { preview, origin, destination, preference, k } = req.body;
+
+            // Si es una previsualización (Optimización), devolvemos las opciones de Python
+            if (preview && origin && destination) {
+                const rutas = await rutasService.calcularRutasOptimas(origin, destination, preference, k);
+                return res.json(rutas);
+            }
+
+            // De lo contrario, procedemos con la creación normal (Manual o Guardado de IA)
             const ruta = await rutasService.createRuta(req.body);
             res.json(ruta);
         } catch (error) {
-            res.json({ error: error.message });
+            res.status(500).json({ error: error.message });
         }
     },
 
@@ -70,15 +79,6 @@ const rutasController = {
         }
     },
 
-    async getOptimizedRoutes(req, res) {
-        try {
-            const { origin, destination, preference, k } = req.body;
-            const rutas = await rutasService.calcularRutasOptimas(origin, destination, preference, k);
-            res.json(rutas);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    }
 };
 
 module.exports = rutasController;
