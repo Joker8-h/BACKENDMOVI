@@ -20,6 +20,17 @@ const calificacionesController = {
         } catch (error) {
             res.json({ error: error.message });
         }
+    },
+
+    async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const calificacion = await calificacionesService.getById(id);
+            if (!calificacion) return res.status(404).json({ error: "Calificación no encontrada" });
+            res.json(calificacion);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

@@ -30,6 +30,17 @@ const reservasController = {
         } catch (error) {
             res.json({ error: error.message });
         }
+    },
+
+    async getById(req, res) {
+        try {
+            const { idUsuarios, idViajes } = req.params;
+            const reserva = await reservasService.getById(idUsuarios, idViajes);
+            if (!reserva) return res.status(404).json({ error: "Reserva no encontrada" });
+            res.json(reserva);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

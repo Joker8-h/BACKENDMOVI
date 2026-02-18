@@ -26,6 +26,17 @@ const calificacionesService = {
 
         const suma = calificaciones.reduce((acc, curr) => acc + curr.puntuacion, 0);
         return suma / calificaciones.length;
+    },
+
+    async getById(id) {
+        return await prisma.calificaciones.findUnique({
+            where: { idCalificacion: parseInt(id) },
+            include: {
+                viaje: true,
+                calificador: { select: { nombre: true, email: true } },
+                calificado: { select: { nombre: true, email: true } }
+            }
+        });
     }
 };
 

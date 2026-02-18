@@ -20,6 +20,17 @@ const pagosController = {
         } catch (error) {
             res.json({ error: error.message });
         }
+    },
+
+    async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const pago = await pagosService.getById(id);
+            if (!pago) return res.status(404).json({ error: "Pago no encontrado" });
+            res.json(pago);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

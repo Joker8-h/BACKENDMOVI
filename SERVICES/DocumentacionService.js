@@ -96,6 +96,24 @@ const documentacionService = {
       },
     });
   },
+
+  async getById(id) {
+    return await prisma.documentacion.findUnique({
+      where: {
+        idDocumentacion: Number(id),
+      },
+      include: {
+        usuario: {
+          select: {
+            idUsuarios: true,
+            nombre: true,
+            email: true,
+            rol: true,
+          },
+        },
+      },
+    });
+  },
 };
 
 module.exports = documentacionService;

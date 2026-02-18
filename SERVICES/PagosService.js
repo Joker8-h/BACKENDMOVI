@@ -19,6 +19,13 @@ const pagosService = {
         return await prisma.pagos.findMany({
             where: { idUsuario: idUsuario }
         });
+    },
+
+    async getById(idPago) {
+        return await prisma.pagos.findUnique({
+            where: { idPago: parseInt(idPago) },
+            include: { usuario: { select: { nombre: true, email: true } } }
+        });
     }
 };
 

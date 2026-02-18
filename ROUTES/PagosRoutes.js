@@ -7,5 +7,6 @@ router.use(verificarToken);
 
 router.post('/', pagosController.create);
 router.get('/', pagosController.getMyPagos);
+router.get('/:id', pagosController.getById);
 
 module.exports = router;

@@ -58,6 +58,16 @@ const suscripcionesService = {
             where: { idUsuario: idUsuario, estado: 'ACTIVA' },
             include: { plan: true }
         });
+    },
+
+    async getById(id) {
+        return await prisma.suscripcionesConductor.findUnique({
+            where: { idSuscripcion: parseInt(id) },
+            include: {
+                usuario: { select: { nombre: true, email: true } },
+                plan: true
+            }
+        });
     }
 };
 

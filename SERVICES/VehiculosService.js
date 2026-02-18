@@ -82,6 +82,14 @@ const vehiculosService = {
             where: { idVehiculos: parseInt(idVehiculo) },
             data: { estado: nuevoEstado }
         });
+    },
+
+    // Obtener un vehículo por su ID
+    async getById(idVehiculo) {
+        return await prisma.vehiculos.findUnique({
+            where: { idVehiculos: parseInt(idVehiculo) },
+            include: { usuario: { select: { nombre: true, email: true } } }
+        });
     }
 };
 

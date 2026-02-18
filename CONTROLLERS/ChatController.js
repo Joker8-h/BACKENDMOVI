@@ -3,7 +3,7 @@ const chatService = require("../SERVICES/ChatService");
 const chatController = {
     async init(req, res) {
         try {
-            
+
             const conversacion = await chatService.initConversacion(req.body);
             res.json(conversacion);
         } catch (error) {
@@ -39,6 +39,17 @@ const chatController = {
             res.json(mensajes);
         } catch (error) {
             res.json({ error: error.message });
+        }
+    },
+
+    async getConversacionById(req, res) {
+        try {
+            const { id } = req.params;
+            const conversacion = await chatService.getConversacionById(id);
+            if (!conversacion) return res.status(404).json({ error: "Conversación no encontrada" });
+            res.json(conversacion);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     }
 };

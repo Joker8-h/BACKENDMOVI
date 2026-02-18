@@ -7,5 +7,6 @@ router.use(verificarToken);
 
 router.post('/', calificacionesController.create);
 router.get('/:idUsuario/promedio', calificacionesController.getPromedio);
+router.get('/:id', calificacionesController.getById);
 
 module.exports = router;

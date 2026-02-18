@@ -100,6 +100,17 @@ const documentacionController = {
                 detalle: error.message
             });
         }
+    },
+
+    async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const doc = await documentacionService.getById(id);
+            if (!doc) return res.status(404).json({ error: "Documentación no encontrada" });
+            res.json(doc);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

@@ -11,4 +11,7 @@ router.get('/documentacion_mis', verificarToken, authorize(['CONDUCTOR']), docum
 // Rutas para Admin (Validación)
 router.patch('/documentacion_validate/:id', verificarToken, authorize(['ADMIN']), documentacionController.validate);
 
+// Ver detalle documentacion
+router.get('/:id', verificarToken, authorize(['ADMIN']), documentacionController.getById);
+
 module.exports = router;

@@ -18,4 +18,7 @@ router.post('/suscribirse', authorize(['CONDUCTOR']), suscripcionesController.su
 // Ver mi suscripción
 router.get('/mi-suscripcion', authorize(['CONDUCTOR']), suscripcionesController.getMiSuscripcion);
 
+// Ver detalle de una suscripción
+router.get('/:id', authorize(['CONDUCTOR', 'ADMIN']), suscripcionesController.getById);
+
 module.exports = router;

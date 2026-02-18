@@ -12,6 +12,8 @@ router.post('/', reservasController.create);
 // Ver mis reservas
 router.get('/mis-reservas', reservasController.getMisReservas);
 
+// Ver detalle reserva (Por ID compuesto)
+router.get('/:idUsuarios/:idViajes', reservasController.getById);
 
 router.post('/:idViaje/cancelar', reservasController.cancelar);
 

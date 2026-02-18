@@ -16,6 +16,9 @@ router.get('/mis-vehiculos', authorize(['CONDUCTOR']), vehiculosController.getMy
 // Ver todos los vehículos: Solo Admin
 router.get('/', authorize(['ADMIN']), vehiculosController.getAll);
 
+// Ver detalle vehículo: Admin y Conductor
+router.get('/:id', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.getById);
+
 // Eliminar vehículo
 router.delete('/:id', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.delete);
 

@@ -64,6 +64,17 @@ const vehiculosController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
+    },
+
+    async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const vehiculo = await vehiculosService.getById(id);
+            if (!vehiculo) return res.status(404).json({ error: "Vehículo no encontrado" });
+            res.json(vehiculo);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

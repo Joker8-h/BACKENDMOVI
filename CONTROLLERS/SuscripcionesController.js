@@ -38,6 +38,17 @@ const suscripcionesController = {
         } catch (error) {
             res.json({ error: error.message });
         }
+    },
+
+    async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const suscripcion = await suscripcionesService.getById(id);
+            if (!suscripcion) return res.status(404).json({ error: "Suscripción no encontrada" });
+            res.json(suscripcion);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

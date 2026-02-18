@@ -62,6 +62,20 @@ const chatService = {
             where: { idConversacion: parseInt(idConversacion) },
             orderBy: { fechaEnvio: 'asc' }
         });
+    },
+
+    async getConversacionById(id) {
+        return await prisma.conversaciones.findUnique({
+            where: { idConversacion: parseInt(id) },
+            include: {
+                viaje: { select: { idViajes: true, fechaHoraSalida: true, ruta: true } },
+                pasajero: { select: { nombre: true, email: true, fotoPerfil: true } },
+                conductor: { select: { nombre: true, email: true, fotoPerfil: true } },
+                mensajes: {
+                    orderBy: { fechaEnvio: 'asc' }
+                }
+            }
+        });
     }
 };
 

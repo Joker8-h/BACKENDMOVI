@@ -203,6 +203,24 @@ const reservasService = {
             Math.sin(dLng / 2) * Math.sin(dLng / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
+    },
+
+    // Obtener una reserva por ID (Clave compuesta)
+    async getById(idUsuarios, idViajes) {
+        return await prisma.usuarioViaje.findUnique({
+            where: {
+                idUsuarios_idViajes: {
+                    idUsuarios: parseInt(idUsuarios),
+                    idViajes: parseInt(idViajes)
+                }
+            },
+            include: {
+                usuario: { select: { nombre: true, email: true } },
+                viaje: { include: { ruta: true, vehiculo: true } },
+                paradaSubida: true,
+                paradaBajada: true
+            }
+        });
     }
 };
 

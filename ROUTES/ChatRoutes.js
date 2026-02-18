@@ -14,6 +14,9 @@ router.post('/mensajes', chatController.enviarMensaje);
 // Ver mis conversaciones
 router.get('/conversaciones', chatController.getMisConversaciones);
 
+// Ver detalle conversacion
+router.get('/conversaciones/:id', chatController.getConversacionById);
+
 // Ver mensajes de una conversacion
 router.get('/conversaciones/:id/mensajes', chatController.getMensajes);
 
