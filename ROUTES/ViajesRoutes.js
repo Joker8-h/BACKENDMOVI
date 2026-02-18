@@ -13,7 +13,7 @@ router.post('/', authorize(['CONDUCTOR', 'ADMIN']), viajesController.create);
 router.get('/buscar', viajesController.search);
 
 // Ver mis viajes (Conductor)
-router.get('/mis-viajes', authorize(['CONDUCTOR']), viajesController.getMisViajes);
+router.get('/mis-viajes', authorize(['CONDUCTOR', 'PASAJERO']), viajesController.getMisViajes);
 
 // Iniciar viaje
 router.post('/:id/iniciar', authorize(['CONDUCTOR']), viajesController.iniciar);

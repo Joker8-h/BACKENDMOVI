@@ -27,18 +27,113 @@ const viajesService = {
     },
 
     async buscarViajes(filtros) {
-        // Lógica básica de búsqueda, se puede expandir para filtrar por origen/destino de la Ruta
-        // Aquí asumimos filtro simple por fecha o mostrar todos los "CREADO" o "PUBLICADO"
+        // Si vienen coordenadas de búsqueda, usamos la lógica de cercanía
+        if (filtros.latO && filtros.lngO && filtros.latD && filtros.lngD) {
+            return await this.buscarViajesPorCercania({
+                latO: parseFloat(filtros.latO),
+                lngO: parseFloat(filtros.lngO),
+                latD: parseFloat(filtros.latD),
+                lngD: parseFloat(filtros.lngD),
+                radio: filtros.radio ? parseFloat(filtros.radio) : 1 // 1km por defecto
+            });
+        }
+
+        // Lógica básica de búsqueda legacy
         return await prisma.viajes.findMany({
             where: {
                 estado: { in: ['CREADO', 'PUBLICADO', 'EN_CURSO'] },
                 cuposDisponibles: { gt: 0 }
             },
             include: {
-                ruta: true,
+                ruta: { include: { paradas: { orderBy: { orden: 'asc' } } } },
                 vehiculo: true
             }
         });
+    },
+
+    async buscarViajesPorCercania({ latO, lngO, latD, lngD, radio }) {
+        // 1. Traer viajes activos con sus rutas y paradas
+        const viajes = await prisma.viajes.findMany({
+            where: {
+                estado: { in: ['CREADO', 'PUBLICADO'] },
+                cuposDisponibles: { gt: 0 }
+            },
+            include: {
+                ruta: {
+                    include: {
+                        paradas: { orderBy: { orden: 'asc' } }
+                    }
+                },
+                vehiculo: {
+                    include: {
+                        usuario: {
+                            select: { nombre: true, fotoPerfil: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Filtrar y ordenar por cercanía
+        const resultados = viajes.map(viaje => {
+            const paradas = viaje.ruta.paradas;
+            if (paradas.length < 2) return null;
+
+            // Encontrar parada más cercana al ORIGEN del pasajero
+            let mejorParadaOrigen = null;
+            let distMinOrigen = Infinity;
+
+            // Encontrar parada más cercana al DESTINO del pasajero
+            let mejorParadaDestino = null;
+            let distMinDestino = Infinity;
+
+            paradas.forEach((parada) => {
+                const distO = this.calcularDistancia(latO, lngO, parseFloat(parada.lat), parseFloat(parada.lng));
+                const distD = this.calcularDistancia(latD, lngD, parseFloat(parada.lat), parseFloat(parada.lng));
+
+                if (distO < distMinOrigen) {
+                    distMinOrigen = distO;
+                    mejorParadaOrigen = parada;
+                }
+
+                if (distD < distMinDestino) {
+                    distMinDestino = distD;
+                    mejorParadaDestino = parada;
+                }
+            });
+
+            // Validaciones:
+            // - Ambas deben estar dentro del radio
+            // - El origen debe ocurrir ANTES que el destino en la ruta (orden)
+            if (distMinOrigen <= radio && distMinDestino <= radio && mejorParadaOrigen.orden < mejorParadaDestino.orden) {
+                return {
+                    ...viaje,
+                    distanciaAlOrigen: distMinOrigen,
+                    distanciaAlDestino: distMinDestino,
+                    sumaDistancias: distMinOrigen + distMinDestino,
+                    paradaRecomendadaSubida: mejorParadaOrigen,
+                    paradaRecomendadaBajada: mejorParadaDestino
+                };
+            }
+
+            return null;
+        }).filter(v => v !== null);
+
+        // 3. Ordenar por la suma de distancias (más cercanos primero)
+        return resultados.sort((a, b) => a.sumaDistancias - b.sumaDistancias);
+    },
+
+    // Helper: Distancia Haversine
+    calcularDistancia(lat1, lng1, lat2, lng2) {
+        const R = 6371; // Radio Tierra km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     },
 
     async getById(id) {
