@@ -28,6 +28,7 @@ router.get('/pasajeros', verfificacion, authorize(['ADMIN']), authController.get
 router.put('/:id', verfificacion, authorize(['ADMIN', 'PASAJERO', 'CONDUCTOR']), authController.updateUsuario);
 router.patch('/:id/estado', verfificacion, authorize(['ADMIN']), authController.cambiarEstadoUsuario);
 router.delete('/:id', verfificacion, authorize(['ADMIN']), authController.eliminarUsuario);
+router.get('/:id', verfificacion, authorize(['ADMIN', 'PASAJERO', 'CONDUCTOR']), authController.getUsuarioById);
 
 router.get('/usuarios/dia/:dia', verfificacion, authorize(['ADMIN']), authController.getUsuariosPorDia);
 

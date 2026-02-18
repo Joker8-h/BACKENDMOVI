@@ -402,6 +402,20 @@ const authService = {
             include: { rol: true }
         });
     },
+
+    async obtenerUsuarioPorId(id) {
+        const usuario = await prisma.usuarios.findUnique({
+            where: { idUsuarios: parseInt(id) },
+            include: { rol: true }
+        });
+
+        if (!usuario) {
+            return null;
+        }
+
+        const { passwordHash: _, ...usuarioSinPassword } = usuario;
+        return usuarioSinPassword;
+    },
 };
 
 module.exports = authService;
