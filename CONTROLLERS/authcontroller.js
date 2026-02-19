@@ -13,10 +13,6 @@ const authController = {
 
             let imageUrl = faceImageUrl;
 
-            if (image || faceImageUrl) {
-                await reconocimientoService.validarRostro(image, faceImageUrl);
-            }
-
             if (!imageUrl && image) {
                 try {
                     imageUrl = await cloudinaryService.subirImagen(image);
@@ -65,8 +61,6 @@ const authController = {
             const { email, password, image, faceImageUrl, nombre } = req.body;
 
             if (image || faceImageUrl) {
-                await reconocimientoService.validarRostro(image, faceImageUrl);
-
                 let imageUrlActual = faceImageUrl;
 
                 if (!imageUrlActual && image) {
