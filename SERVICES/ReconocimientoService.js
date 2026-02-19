@@ -123,6 +123,20 @@ const reconocimientoService = {
             console.error("ReconocimientoService: Error al detectar duplicado:", error.message);
             throw error;
         }
+    },
+
+    async validarRostro(base64Image, imageUrl = null) {
+        try {
+            // Usamos verificarRostro para validar la presencia de un rostro
+            const data = await this.verificarRostro(base64Image, imageUrl);
+            return data;
+        } catch (error) {
+            // Si el error es de detección (400), lanzamos un mensaje amigable
+            if (error.message.includes("400") || error.message.toLowerCase().includes("no se detectó")) {
+                throw new Error("La imagen no contiene un rostro válido. Por favor, sube una foto clara de tu rostro.");
+            }
+            throw error;
+        }
     }
 };
 
