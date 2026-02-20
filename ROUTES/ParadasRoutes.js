@@ -13,8 +13,8 @@ router.get('/ruta/:idRuta', paradasController.getByRuta);
 router.get('/:id', paradasController.getById);
 
 // Rutas protegidas (conductores/admin pueden gestionar paradas)
-router.post('/', authorize(['CONDUCTOR', 'ADMIN']), paradasController.create);
-router.put('/:id', authorize(['CONDUCTOR', 'ADMIN']), paradasController.update);
-router.delete('/:id', authorize(['CONDUCTOR', 'ADMIN']), paradasController.delete);
+router.post('/', authorize(['CONDUCTOR', 'ADMIN', 'PASAJERO']), paradasController.create);
+router.put('/:id', authorize(['CONDUCTOR', 'ADMIN', 'PASAJERO']), paradasController.update);
+router.delete('/:id', authorize(['CONDUCTOR', 'ADMIN', 'PASAJERO']), paradasController.delete);
 
 module.exports = router;
