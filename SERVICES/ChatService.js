@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient({
 });
+const notificacionesService = require("./NotificacionesService");
 
 const chatService = {
 
@@ -26,7 +27,7 @@ const chatService = {
     },
 
     async enviarMensaje(data) {
-        return await prisma.mensajes.create({
+        const mensaje = await prisma.mensajes.create({
             data: {
                 idConversacion: parseInt(data.idConversacion),
                 idRemitente: parseInt(data.idRemitente),
@@ -34,6 +35,33 @@ const chatService = {
                 tipo: data.tipo || 'TEXTO'
             }
         });
+
+        // NOTIFICACIÓN AUTOMÁTICA
+        try {
+            const conversacion = await prisma.conversaciones.findUnique({
+                where: { idConversacion: parseInt(data.idConversacion) }
+            });
+
+            // El destinatario es quien NO envió el mensaje
+            const idDestinatario = conversacion.idPasajero === parseInt(data.idRemitente)
+                ? conversacion.idConductor
+                : conversacion.idPasajero;
+
+            const remitente = await prisma.usuarios.findUnique({
+                where: { idUsuarios: parseInt(data.idRemitente) }
+            });
+
+            await notificacionesService.crearNotificacion({
+                idUsuario: idDestinatario,
+                titulo: "Nuevo Mensaje",
+                mensaje: `Tienes un nuevo mensaje de ${remitente.nombre}: "${data.mensaje.substring(0, 30)}${data.mensaje.length > 30 ? '...' : ''}"`,
+                tipo: "MENSAJE"
+            });
+        } catch (notifError) {
+            console.error("Error al crear notificación de mensaje:", notifError.message);
+        }
+
+        return mensaje;
     },
 
     async getConversacionesUsuario(idUsuario) {

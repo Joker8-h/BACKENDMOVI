@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 require('dotenv').config();
 
 const prisma = new PrismaClient();
+const notificacionesService = require("./NotificacionesService");
 
 const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro";
 const JWT_EXPIRES_IN = process.env.EXPIRE_TIME || "1d";
@@ -112,6 +113,18 @@ const authService = {
         });
 
         console.log("DEBUG authService.registrar - Usuario creado. fotoPerfil guardado:", newUsuario.fotoPerfil);
+
+        // NOTIFICACIÓN AUTOMÁTICA DE BIENVENIDA
+        try {
+            await notificacionesService.crearNotificacion({
+                idUsuario: newUsuario.idUsuarios,
+                titulo: "¡Bienvenido a MOVI!",
+                mensaje: `Hola ${newUsuario.nombre}, gracias por registrarte. ¡Esperamos que disfrutes de tus viajes!`,
+                tipo: "SISTEMA"
+            });
+        } catch (notifError) {
+            console.error("Error al crear notificación de bienvenida:", notifError.message);
+        }
 
         // 5. Retornar sin password
         const { passwordHash: _, ...usuarioSinPassword } = newUsuario;

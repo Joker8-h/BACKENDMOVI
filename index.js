@@ -8,7 +8,7 @@ app.set('trust proxy', 1);
 
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -40,6 +40,7 @@ const viajeTramosRoutes = require('./ROUTES/ViajeTramosRoutes');
 const planesConductorRoutes = require('./ROUTES/PlanesConductorRoutes');
 const iaRutasLogRoutes = require('./ROUTES/IaRutasLogRoutes');
 const documentacionRoutes = require('./ROUTES/DocumentacionRoutes');
+const notificacionesRoutes = require('./ROUTES/NotificacionesRoutes');
 
 // Usar Rutas
 app.use('/api/auth', authRoutes);
@@ -57,6 +58,7 @@ app.use('/api/viaje-tramos', viajeTramosRoutes);
 app.use('/api/planes-conductor', planesConductorRoutes);
 app.use('/api/ia-rutas-log', iaRutasLogRoutes);
 app.use('/api/documentacion', documentacionRoutes);
+app.use('/api/notificaciones', notificacionesRoutes);
 
 
 

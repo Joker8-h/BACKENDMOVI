@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const notificacionesService = require("./NotificacionesService");
 
 const documentacionService = {
 
@@ -86,7 +87,7 @@ const documentacionService = {
       throw new Error("estado es obligatorio");
     }
 
-    return await prisma.documentacion.update({
+    const actualizada = await prisma.documentacion.update({
       where: {
         idDocumentacion: Number(idDocumentacion),
       },
@@ -95,6 +96,22 @@ const documentacionService = {
         observaciones: observaciones || null,
       },
     });
+
+    // NOTIFICACIÓN AUTOMÁTICA
+    try {
+      await notificacionesService.crearNotificacion({
+        idUsuario: actualizada.idUsuario,
+        titulo: `Documentación ${estado === 'APROBADO' ? 'Aprobada' : 'Rechazada'}`,
+        mensaje: estado === 'APROBADO'
+          ? "¡Felicidades! Tu documentación ha sido aprobada. Ya puedes empezar a realizar viajes."
+          : `Tu documentación ha sido rechazada. Motivo: ${observaciones || 'No especificado'}. Por favor, vuelve a subirla correctamente.`,
+        tipo: "SISTEMA"
+      });
+    } catch (notifError) {
+      console.error("Error al crear notificación de documentación:", notifError.message);
+    }
+
+    return actualizada;
   },
 
   async getById(id) {

@@ -115,11 +115,12 @@ model Usuarios {
 
   rol Roles @relation(fields: [idRol], references: [idRol])
 
-  vehiculos     Vehiculos[]
-  pagos         Pagos[]
-  mensajes      Mensajes[]
-  suscripciones SuscripcionesConductor[] // Usa el plan a través de Suscripciones
-  viajes        UsuarioViaje[]
+  vehiculos      Vehiculos[]
+  pagos          Pagos[]
+  mensajes       Mensajes[]
+  suscripciones  SuscripcionesConductor[] // Usa el plan a través de Suscripciones
+  viajes         UsuarioViaje[]
+  notificaciones Notificacion[]
 
   calificacionesDadas     Calificaciones[] @relation("Calificador")
   calificacionesRecibidas Calificaciones[] @relation("Calificado")
@@ -367,4 +368,18 @@ model Documentacion {
   observaciones String?             @db.VarChar(255)
 
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+}
+
+model Notificacion {
+  idNotificacion Int      @id @default(autoincrement())
+  idUsuario      Int
+  titulo         String   @db.VarChar(100)
+  mensaje        String   @db.Text
+  leido          Boolean  @default(false)
+  fechaCreacion  DateTime @default(now())
+  tipo           String   @db.VarChar(50) // 'SISTEMA', 'VIAJE', 'PAGO', 'MENSAJE'
+
+  usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+
+  @@map("Notificaciones")
 }

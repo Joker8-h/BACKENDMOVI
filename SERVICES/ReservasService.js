@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient({
 });
+const notificacionesService = require("./NotificacionesService");
 
 const reservasService = {
     // Crear reserva (Usuario reserva un viaje)
@@ -134,6 +135,19 @@ const reservasService = {
                 data: { cuposDisponibles: { decrement: 1 } }
             });
 
+            // NOTIFICACIÓN AUTOMÁTICA
+            try {
+                const pasajero = await tx.usuarios.findUnique({ where: { idUsuarios: idUsuario } });
+                await notificacionesService.crearNotificacion({
+                    idUsuario: viaje.vehiculo.idUsuario,
+                    titulo: "Nueva Reserva",
+                    mensaje: `${pasajero.nombre} ha reservado un cupo en tu viaje de ${viaje.ruta.nombre || 'Ruta'}`,
+                    tipo: "VIAJE"
+                });
+            } catch (notifError) {
+                console.error("Error al crear notificación de reserva:", notifError.message);
+            }
+
             return reserva;
         });
     },
@@ -187,6 +201,24 @@ const reservasService = {
                 where: { idViajes: parseInt(idViaje) },
                 data: { cuposDisponibles: { increment: 1 } }
             });
+
+            // NOTIFICACIÓN AUTOMÁTICA
+            try {
+                const viaje = await tx.viajes.findUnique({
+                    where: { idViajes: parseInt(idViaje) },
+                    include: { vehiculo: true, ruta: true }
+                });
+                const pasajero = await tx.usuarios.findUnique({ where: { idUsuarios: idUsuario } });
+
+                await notificacionesService.crearNotificacion({
+                    idUsuario: viaje.vehiculo.idUsuario,
+                    titulo: "Reserva Cancelada",
+                    mensaje: `${pasajero.nombre} ha cancelado su reserva para el viaje de ${viaje.ruta.nombre || 'Ruta'}`,
+                    tipo: "VIAJE"
+                });
+            } catch (notifError) {
+                console.error("Error al crear notificación de cancelación:", notifError.message);
+            }
 
             return actualizada;
         });
