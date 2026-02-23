@@ -38,14 +38,41 @@ const documentacionService = {
     }
 
     // CREATE
+    const aiService = require("./AiObjectRecognitionService");
+    let initialEstado = "PENDIENTE";
+    let initialObservaciones = null;
+
+    // Validación automática de Fraude en Licencias
+    if (data.tipoDocumento === "LICENCIA" && data.imagenFrontalUrl) {
+      try {
+        const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
+
+        // Usar datos extraídos si están disponibles
+        if (validacion.extracted_data && validacion.extracted_data.numerolic && !data.numeroDocumento) {
+          data.numeroDocumento = validacion.extracted_data.numerolic;
+        }
+
+        if (validacion.sospecha_fraude) {
+          initialEstado = "RECHAZADO";
+          initialObservaciones = "RECHAZO AUTOMÁTICO IA: Se detectó posible fraude o elementos faltantes en el documento. Requiere revisión manual urgente.";
+        } else if (validacion.confianza > 0.95) {
+          initialEstado = "APROBADO";
+          initialObservaciones = "APROBACIÓN AUTOMÁTICA IA: Documento verificado con alta confianza y datos extraídos correctamente.";
+        }
+      } catch (aiError) {
+        console.error("Fallo silencioso en verificación IA:", aiError.message);
+      }
+    }
+
     return await prisma.documentacion.create({
       data: {
         idUsuario: Number(idUsuario),
         tipoDocumento: data.tipoDocumento,
-        numeroDocumento: data.numeroDocumento,
+        numeroDocumento: data.numeroDocumento || "PENDIENTE_EXTRAER",
         imagenFrontalUrl: data.imagenFrontalUrl,
         imagenDorsalUrl: data.imagenDorsalUrl,
-        estado: "PENDIENTE",
+        estado: initialEstado,
+        observaciones: initialObservaciones || "Documentación en proceso de revisión.",
         fechaSubida: new Date(),
       },
     });
