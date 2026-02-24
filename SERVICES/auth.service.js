@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const dns = require('dns').promises;
 require('dotenv').config();
 
 const prisma = new PrismaClient();
@@ -58,6 +59,24 @@ function validarPasswordSegura(password) {
     };
 }
 
+/**
+ * Valida si el dominio del correo tiene registros MX (servidores de correo activos)
+ * @param {string} email - Correo a validar
+ * @returns {Promise<boolean>} - True si tiene registros MX
+ */
+async function validarDominioCorreo(email) {
+    try {
+        const dominio = email.split('@')[1];
+        if (!dominio) return false;
+
+        const registros = await dns.resolveMx(dominio);
+        return registros && registros.length > 0;
+    } catch (error) {
+        console.error(`[DNS-VALIDATION] El dominio no tiene registros MX o es inválido:`, error.message);
+        return false;
+    }
+}
+
 const authService = {
     async registrar(data) {
         const { email, password, nombre, telefono, rol, fotoPerfil } = data;
@@ -78,6 +97,12 @@ const authService = {
 
         if (usuarioExiste) {
             throw new Error("El usuario ya existe con ese correo electrónico.");
+        }
+
+        // 3. Validar existencia real del correo (DNS MX)
+        const correoValido = await validarDominioCorreo(email);
+        if (!correoValido) {
+            throw new Error("El dominio del correo electrónico no parece existir o no puede recibir correos.");
         }
 
         // 2. Resolver el Rol (String -> ID)
@@ -105,7 +130,7 @@ const authService = {
                 telefono,
                 fotoPerfil,
                 idRol: rolDb.idRol,
-                estado: "ACTIVO",
+                estado: nombreRol === "CONDUCTOR" ? "INACTIVO" : "ACTIVO",
             },
             include: {
                 rol: true

@@ -43,9 +43,12 @@ const documentacionService = {
     let initialObservaciones = null;
 
     // Validación automática de Fraude en Licencias
+    let datosOcr = null;
+
     if (data.tipoDocumento === "LICENCIA" && data.imagenFrontalUrl) {
       try {
         const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
+        datosOcr = validacion.extracted_data;
 
         // Usar datos extraídos si están disponibles
         if (validacion.extracted_data && validacion.extracted_data.numerolic && !data.numeroDocumento) {
@@ -73,6 +76,7 @@ const documentacionService = {
         imagenDorsalUrl: data.imagenDorsalUrl,
         estado: initialEstado,
         observaciones: initialObservaciones || "Documentación en proceso de revisión.",
+        datosOcr: datosOcr, // Guardar el resultado del OCR
         fechaSubida: new Date(),
       },
     });

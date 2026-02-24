@@ -143,6 +143,10 @@ model Vehiculos {
   capacidad Int
   estado    EstadoVehiculo @default(ACTIVO)
 
+  // Nuevos campos para validación de placa
+  fotoVehiculo  String? @db.VarChar(500)
+  placaValidada Boolean @default(false)
+
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
   viajes  Viajes[]
 }
@@ -366,6 +370,9 @@ model Documentacion {
   estado        EstadoDocumentacion @default(PENDIENTE)
   fechaSubida   DateTime            @default(now())
   observaciones String?             @db.VarChar(255)
+
+  // Nuevo campo para guardar resultados del OCR
+  datosOcr Json?
 
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
 }

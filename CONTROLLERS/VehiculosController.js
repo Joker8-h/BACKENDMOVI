@@ -3,7 +3,7 @@ const vehiculosService = require("../SERVICES/VehiculosService");
 const vehiculosController = {
     async create(req, res) {
         try {
-            const { marca, modelo, placa, capacidad } = req.body;
+            const { marca, modelo, placa, capacidad, fotoVehiculo } = req.body;
 
             const idUsuario = req.user.id;
 
@@ -12,7 +12,8 @@ const vehiculosController = {
                 marca,
                 modelo,
                 placa,
-                capacidad: parseInt(capacidad)
+                capacidad: parseInt(capacidad),
+                fotoVehiculo // Nueva propiedad
             });
             res.json(nuevoVehiculo);
         } catch (error) {

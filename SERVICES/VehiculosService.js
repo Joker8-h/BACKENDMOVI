@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient({
-});
+const prisma = new PrismaClient();
+const aiService = require("./AiObjectRecognitionService");
 
 const vehiculosService = {
     // Crear un nuevo vehículo
@@ -11,6 +11,26 @@ const vehiculosService = {
         });
         if (existe) {
             throw new Error("Ya existe un vehículo con esa placa.");
+        }
+
+        // Validación automática de placa vía IA
+        if (data.fotoVehiculo) {
+            try {
+                const validacion = await aiService.verificarPlaca(data.fotoVehiculo);
+
+                // Si la placa detectada por OCR coincide con la placa ingresada manualmente
+                if (validacion.is_detected && validacion.plate_text) {
+                    const placaLimpiaIngresada = data.placa.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                    const placaLimpiaDetectada = validacion.plate_text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+
+                    if (placaLimpiaDetectada.includes(placaLimpiaIngresada) || placaLimpiaIngresada.includes(placaLimpiaDetectada)) {
+                        data.placaValidada = true;
+                        console.log(`[VEHICULOS] Placa ${data.placa} validada automáticamente por IA.`);
+                    }
+                }
+            } catch (err) {
+                console.error("[VEHICULOS] Error en validación IA de placa:", err.message);
+            }
         }
 
         return await prisma.vehiculos.create({
