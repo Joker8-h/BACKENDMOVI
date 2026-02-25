@@ -47,7 +47,6 @@ const documentacionController = {
                     nombre: doc.datosOcr.nombre || "No detectado",
                     identificacion: doc.datosOcr.numerolic || "No detectado",
                     fechaExpedicion: doc.datosOcr.fechaexpedicion || null,
-                    fechaVencimiento: doc.datosOcr.fechavencimiento || null,
                     categoria: doc.datosOcr.categoria || "B1"
                 } : null
             };
