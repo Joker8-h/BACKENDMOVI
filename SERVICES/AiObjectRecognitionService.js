@@ -19,6 +19,7 @@ const aiObjectRecognitionService = {
             const form = new FormData();
             form.append('file', buffer, { filename: 'license_image.jpg', contentType: 'image/jpeg' });
 
+            console.log(`[AI-BRIDGE] URL de IA: ${this.AI_LICENSE_URL}`);
             const aiResponse = await axios.post(this.AI_LICENSE_URL, form, {
                 headers: { ...form.getHeaders() }
             });

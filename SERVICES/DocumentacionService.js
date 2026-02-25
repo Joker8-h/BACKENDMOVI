@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const notificacionesService = require("./NotificacionesService");
+const aiService = require("./AiObjectRecognitionService");
 
 const documentacionService = {
 
@@ -21,14 +22,17 @@ const documentacionService = {
     });
 
     // --- LÓGICA DE IA (OCR Y FRAUDE) ---
+    console.log("[DocumentacionService] Evaluando IA. Tipo:", data.tipoDocumento, "URL:", data.imagenFrontalUrl ? "SI" : "NO");
     const aiService = require("./AiObjectRecognitionService");
     let initialEstado = "PENDIENTE";
     let initialObservaciones = "Documentación en proceso de revisión.";
     let datosOcr = null;
 
     // Aceptar tanto "LICENCIA" como "LICENCIA_CONDUCCION"
-    if ((data.tipoDocumento === "LICENCIA" || data.tipoDocumento === "LICENCIA_CONDUCCION") && data.imagenFrontalUrl) {
-      console.log(`[DocumentacionService] Iniciando validación IA para ${data.tipoDocumento}...`);
+    const esLicencia = data.tipoDocumento === "LICENCIA" || data.tipoDocumento === "LICENCIA_CONDUCCION" || data.tipoDocumento === "LICENCIA_CONDUCCION";
+
+    if (esLicencia && data.imagenFrontalUrl) {
+      console.log(`[DocumentacionService] >>> DISPARANDO IA para ${data.tipoDocumento} <<<`);
       try {
         const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
         datosOcr = validacion.extracted_data;

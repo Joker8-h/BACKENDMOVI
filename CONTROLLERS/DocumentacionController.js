@@ -5,13 +5,16 @@ const documentacionController = {
 
     // Subir o actualizar documentación (usuario autenticado)
     async upload(req, res) {
+        console.log("[DocumentacionController] Entrando a la función upload...");
         try {
             // Validar autenticación
             const idUsuario = req.user.id;
+            console.log("[DocumentacionController] Body recibido:", { ...req.body, imagenFrontal: req.body.imagenFrontal ? "(BASE64_DATA)" : "AUSENTE" });
             const data = req.body;
 
             // Validaciones básicas
             if (!data.tipoDocumento) {
+                console.log("[DocumentacionController] ERROR: falta tipoDocumento");
                 return res.status(400).json({
                     error: "Faltan campos obligatorios (tipoDocumento)"
                 });
@@ -20,7 +23,14 @@ const documentacionController = {
             // Si viene una imagen en base64 (como en Moviflex_con_React), la subimos a Cloudinary
             if (data.imagenFrontal && !data.imagenFrontalUrl) {
                 console.log("[DocumentacionController] Detectada imagen Base64, subiendo a Cloudinary...");
-                data.imagenFrontalUrl = await cloudinaryService.subirImagen(data.imagenFrontal, "documentacion");
+                try {
+                    data.imagenFrontalUrl = await cloudinaryService.subirImagen(data.imagenFrontal, "documentacion");
+                    console.log("[DocumentacionController] Imagen subida exitosamente:", data.imagenFrontalUrl);
+                } catch (error) {
+                    console.error("[DocumentacionController] Error subiendo imagen a Cloudinary:", error.message);
+                }
+            } else {
+                console.log("[DocumentacionController] No se requiere subida a Cloudinary (ya hay URL o no hay Base64)");
             }
 
             // Normalizar campos obligatorios si no vienen pero hay OCR
@@ -42,6 +52,7 @@ const documentacionController = {
                 } : null
             };
 
+            console.log("[DocumentacionController] Enviando respuesta exitosa al frontend...");
             res.status(200).json(response);
 
         } catch (error) {
