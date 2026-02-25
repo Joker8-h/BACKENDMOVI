@@ -20,57 +20,59 @@ const documentacionService = {
       },
     });
 
+    // --- LÓGICA DE IA (OCR Y FRAUDE) ---
+    const aiService = require("./AiObjectRecognitionService");
+    let initialEstado = "PENDIENTE";
+    let initialObservaciones = "Documentación en proceso de revisión.";
+    let datosOcr = null;
+
+    // Aceptar tanto "LICENCIA" como "LICENCIA_CONDUCCION"
+    if ((data.tipoDocumento === "LICENCIA" || data.tipoDocumento === "LICENCIA_CONDUCCION") && data.imagenFrontalUrl) {
+      console.log(`[DocumentacionService] Iniciando validación IA para ${data.tipoDocumento}...`);
+      try {
+        const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
+        datosOcr = validacion.extracted_data;
+
+        // Autocompletar campos si la IA los encontró y no venían en el request
+        if (validacion.extracted_data?.numerolic && !data.numeroDocumento) {
+          data.numeroDocumento = validacion.extracted_data.numerolic;
+        }
+        if (validacion.extracted_data?.fechaexpedicion && !data.fechaExpedicion) {
+          data.fechaExpedicion = validacion.extracted_data.fechaexpedicion;
+        }
+
+        if (validacion.sospecha_fraude) {
+          initialEstado = "RECHAZADO";
+          initialObservaciones = "RECHAZO AUTOMÁTICO IA: Se detectó posible fraude o elementos faltantes. Requiere revisión manual.";
+        } else if (validacion.confianza > 0.95) {
+          initialEstado = "APROBADO";
+          initialObservaciones = "APROBACIÓN AUTOMÁTICA IA: Documento verificado con alta confianza.";
+        }
+      } catch (aiError) {
+        console.error("[DocumentacionService] Error en verificación IA:", aiError.message);
+      }
+    }
+
     if (existente) {
       // UPDATE
+      console.log(`[DocumentacionService] Actualizando documento existente ID: ${existente.idDocumentacion}`);
       return await prisma.documentacion.update({
-        where: {
-          idDocumentacion: existente.idDocumentacion,
-        },
+        where: { idDocumentacion: existente.idDocumentacion },
         data: {
           tipoDocumento: data.tipoDocumento,
-          numeroDocumento: data.numeroDocumento,
-          fechaExpedicion: data.fechaExpedicion,
+          numeroDocumento: data.numeroDocumento || existente.numeroDocumento,
+          fechaExpedicion: data.fechaExpedicion || existente.fechaExpedicion,
           imagenFrontalUrl: data.imagenFrontalUrl,
-          estado: "PENDIENTE",
+          estado: initialEstado,
+          observaciones: initialObservaciones,
+          datosOcr: datosOcr,
           fechaSubida: new Date(),
         },
       });
     }
 
     // CREATE
-    const aiService = require("./AiObjectRecognitionService");
-    let initialEstado = "PENDIENTE";
-    let initialObservaciones = null;
-
-    // Validación automática de Fraude en Licencias
-    let datosOcr = null;
-
-    // Aceptar tanto "LICENCIA" como "LICENCIA_CONDUCCION" (frontend Moviflex_con_React)
-    if ((data.tipoDocumento === "LICENCIA" || data.tipoDocumento === "LICENCIA_CONDUCCION") && data.imagenFrontalUrl) {
-      try {
-        const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
-        datosOcr = validacion.extracted_data;
-
-        if (validacion.extracted_data && validacion.extracted_data.numerolic && !data.numeroDocumento) {
-          data.numeroDocumento = validacion.extracted_data.numerolic;
-        }
-
-        if (validacion.extracted_data && validacion.extracted_data.fechaexpedicion && !data.fechaExpedicion) {
-          data.fechaExpedicion = validacion.extracted_data.fechaexpedicion;
-        }
-
-        if (validacion.sospecha_fraude) {
-          initialEstado = "RECHAZADO";
-          initialObservaciones = "RECHAZO AUTOMÁTICO IA: Se detectó posible fraude o elementos faltantes en el documento. Requiere revisión manual urgente.";
-        } else if (validacion.confianza > 0.95) {
-          initialEstado = "APROBADO";
-          initialObservaciones = "APROBACIÓN AUTOMÁTICA IA: Documento verificado con alta confianza y datos extraídos correctamente.";
-        }
-      } catch (aiError) {
-        console.error("Fallo silencioso en verificación IA:", aiError.message);
-      }
-    }
-
+    console.log(`[DocumentacionService] Creando nuevo registro de documentación para usuario: ${idUsuario}`);
     return await prisma.documentacion.create({
       data: {
         idUsuario: Number(idUsuario),
@@ -79,8 +81,8 @@ const documentacionService = {
         fechaExpedicion: data.fechaExpedicion || "PENDIENTE_EXTRAER",
         imagenFrontalUrl: data.imagenFrontalUrl,
         estado: initialEstado,
-        observaciones: initialObservaciones || "Documentación en proceso de revisión.",
-        datosOcr: datosOcr, // Guardar el resultado del OCR
+        observaciones: initialObservaciones,
+        datosOcr: datosOcr,
         fechaSubida: new Date(),
       },
     });
