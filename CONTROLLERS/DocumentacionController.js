@@ -10,9 +10,9 @@ const documentacionController = {
             const data = req.body;
 
             // Validaciones básicas
-            if (!data.tipoDocumento || !data.numeroDocumento) {
+            if (!data.tipoDocumento || !data.numeroDocumento || !data.fechaExpedicion) {
                 return res.status(400).json({
-                    error: "Faltan campos obligatorios (tipoDocumento, numeroDocumento)"
+                    error: "Faltan campos obligatorios (tipoDocumento, numeroDocumento, fechaExpedicion)"
                 });
             }
 

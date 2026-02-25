@@ -11,8 +11,9 @@ const aiObjectRecognitionService = {
      */
     async verificarAutenticidad(imageUrl) {
         try {
-            console.log(`[AI-BRIDGE] Verificando licencia: ${imageUrl}`);
+            console.log(`[AI-BRIDGE] Descargando imagen desde Cloudinary para Licencia: ${imageUrl}`);
             const responseImage = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            console.log(`[AI-BRIDGE] Imagen descargada exitosamente (${responseImage.data.length} bytes). Enviando a servicio Python...`);
             const buffer = Buffer.from(responseImage.data, 'binary');
 
             const form = new FormData();

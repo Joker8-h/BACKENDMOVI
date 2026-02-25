@@ -363,9 +363,9 @@ model Documentacion {
 
   tipoDocumento   String? @db.VarChar(50)
   numeroDocumento String? @db.VarChar(50)
+  fechaExpedicion String? @db.VarChar(50)
 
   imagenFrontalUrl String? @db.VarChar(255)
-  imagenDorsalUrl  String? @db.VarChar(255)
 
   estado        EstadoDocumentacion @default(PENDIENTE)
   fechaSubida   DateTime            @default(now())

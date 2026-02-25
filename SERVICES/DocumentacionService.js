@@ -29,8 +29,8 @@ const documentacionService = {
         data: {
           tipoDocumento: data.tipoDocumento,
           numeroDocumento: data.numeroDocumento,
+          fechaExpedicion: data.fechaExpedicion,
           imagenFrontalUrl: data.imagenFrontalUrl,
-          imagenDorsalUrl: data.imagenDorsalUrl,
           estado: "PENDIENTE",
           fechaSubida: new Date(),
         },
@@ -50,9 +50,12 @@ const documentacionService = {
         const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
         datosOcr = validacion.extracted_data;
 
-        // Usar datos extraídos si están disponibles
         if (validacion.extracted_data && validacion.extracted_data.numerolic && !data.numeroDocumento) {
           data.numeroDocumento = validacion.extracted_data.numerolic;
+        }
+
+        if (validacion.extracted_data && validacion.extracted_data.fechaexpedicion && !data.fechaExpedicion) {
+          data.fechaExpedicion = validacion.extracted_data.fechaexpedicion;
         }
 
         if (validacion.sospecha_fraude) {
@@ -72,8 +75,8 @@ const documentacionService = {
         idUsuario: Number(idUsuario),
         tipoDocumento: data.tipoDocumento,
         numeroDocumento: data.numeroDocumento || "PENDIENTE_EXTRAER",
+        fechaExpedicion: data.fechaExpedicion || "PENDIENTE_EXTRAER",
         imagenFrontalUrl: data.imagenFrontalUrl,
-        imagenDorsalUrl: data.imagenDorsalUrl,
         estado: initialEstado,
         observaciones: initialObservaciones || "Documentación en proceso de revisión.",
         datosOcr: datosOcr, // Guardar el resultado del OCR
