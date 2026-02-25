@@ -46,14 +46,16 @@ const documentacionService = {
         }
 
         if (validacion.sospecha_fraude) {
-          initialEstado = "RECHAZADO";
-          initialObservaciones = "RECHAZO AUTOMÁTICO IA: Se detectó posible fraude o elementos faltantes. Requiere revisión manual.";
+          const missing = validacion.missing_items.join(", ");
+          console.log(`[DocumentacionService] RECHAZANDO por IA: faltan [${missing}]`);
+          throw new Error(`Documento incompleto o ilegible. No se detectaron: ${missing}. Por favor, toma una foto más clara.`);
         } else if (validacion.confianza > 0.95) {
           initialEstado = "APROBADO";
           initialObservaciones = "APROBACIÓN AUTOMÁTICA IA: Documento verificado con alta confianza.";
         }
       } catch (aiError) {
-        console.error("[DocumentacionService] Error en verificación IA:", aiError.message);
+        console.error("[DocumentacionService] Error en validación IA:", aiError.message);
+        throw aiError; // Re-lanzar para que el controlador lo maneje
       }
     }
 

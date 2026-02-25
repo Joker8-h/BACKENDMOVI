@@ -56,6 +56,14 @@ const documentacionController = {
 
         } catch (error) {
             console.error("ERROR REAL ", error);
+
+            // Si es un error de validación de la IA o campos faltantes
+            if (error.message.includes("Documento incompleto") || error.message.includes("ilegible")) {
+                return res.status(400).json({
+                    error: error.message
+                });
+            }
+
             res.status(500).json({
                 error: "Error al guardar la documentación",
                 detalle: error.message
