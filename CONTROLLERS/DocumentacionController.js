@@ -1,4 +1,5 @@
 const documentacionService = require("../SERVICES/DocumentacionService");
+const cloudinaryService = require("../SERVICES/CloudinaryService");
 
 const documentacionController = {
 
@@ -10,21 +11,38 @@ const documentacionController = {
             const data = req.body;
 
             // Validaciones básicas
-            if (!data.tipoDocumento || !data.numeroDocumento || !data.fechaExpedicion) {
+            if (!data.tipoDocumento) {
                 return res.status(400).json({
-                    error: "Faltan campos obligatorios (tipoDocumento, numeroDocumento, fechaExpedicion)"
+                    error: "Faltan campos obligatorios (tipoDocumento)"
                 });
             }
 
+            // Si viene una imagen en base64 (como en Moviflex_con_React), la subimos a Cloudinary
+            if (data.imagenFrontal && !data.imagenFrontalUrl) {
+                console.log("[DocumentacionController] Detectada imagen Base64, subiendo a Cloudinary...");
+                data.imagenFrontalUrl = await cloudinaryService.subirImagen(data.imagenFrontal, "documentacion");
+            }
+
+            // Normalizar campos obligatorios si no vienen pero hay OCR
             const doc = await documentacionService.upsertDocumentacion(
                 idUsuario,
                 data
             );
 
-            res.status(200).json({
+            // Mapear respuesta para el frontend (Moviflex_con_React espera datosLicencia)
+            const response = {
                 message: "Documentación guardada exitosamente",
-                doc
-            });
+                doc,
+                datosLicencia: doc.datosOcr ? {
+                    nombre: doc.datosOcr.nombre || "No detectado",
+                    identificacion: doc.datosOcr.numerolic || "No detectado",
+                    fechaExpedicion: doc.datosOcr.fechaexpedicion || null,
+                    fechaVencimiento: doc.datosOcr.fechavencimiento || null,
+                    categoria: doc.datosOcr.categoria || "B1"
+                } : null
+            };
+
+            res.status(200).json(response);
 
         } catch (error) {
             console.error("ERROR REAL ", error);

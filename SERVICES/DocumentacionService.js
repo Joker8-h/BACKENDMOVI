@@ -45,7 +45,8 @@ const documentacionService = {
     // Validación automática de Fraude en Licencias
     let datosOcr = null;
 
-    if (data.tipoDocumento === "LICENCIA" && data.imagenFrontalUrl) {
+    // Aceptar tanto "LICENCIA" como "LICENCIA_CONDUCCION" (frontend Moviflex_con_React)
+    if ((data.tipoDocumento === "LICENCIA" || data.tipoDocumento === "LICENCIA_CONDUCCION") && data.imagenFrontalUrl) {
       try {
         const validacion = await aiService.verificarAutenticidad(data.imagenFrontalUrl);
         datosOcr = validacion.extracted_data;
