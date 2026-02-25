@@ -3,8 +3,28 @@ const FormData = require('form-data');
 
 const aiObjectRecognitionService = {
     // URL del servidor Python (ajustar según configuración)
-    AI_LICENSE_URL: process.env.AI_LICENSE_URL || "http://localhost:8000/predict",
-    AI_PLATE_URL: process.env.AI_PLATE_URL || "http://localhost:8000/verificar-placa",
+    get AI_LICENSE_URL() {
+        let url = process.env.AI_LICENSE_URL || "http://localhost:8000/predict";
+        if (url && !url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+        // Si la URL no termina en /predict, se añade (a menos que ya tenga otra ruta)
+        if (url && !url.includes('/predict') && !url.includes('/verificar-')) {
+            url = url.endsWith('/') ? url + 'predict' : url + '/predict';
+        }
+        return url;
+    },
+    get AI_PLATE_URL() {
+        let url = process.env.AI_PLATE_URL || "http://localhost:8000/verificar-placa";
+        if (url && !url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+        // Si la URL no termina en /verificar-placa, se añade
+        if (url && !url.includes('/verificar-placa')) {
+            url = url.endsWith('/') ? url + 'verificar-placa' : url + '/verificar-placa';
+        }
+        return url;
+    },
 
     /**
      * Envía una imagen para verificar su autenticidad (Licencia) y extraer datos.
