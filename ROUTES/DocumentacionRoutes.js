@@ -6,10 +6,16 @@ const authorize = require('../MIDDLEWARE/role.middleware');
 
 // Rutas para Conductor
 router.post('/documentacion_subir', verificarToken, authorize(['CONDUCTOR']), documentacionController.upload);
-router.get('/documentacion_mis', verificarToken, authorize(['CONDUCTOR','ADMIN']), documentacionController.getMyDocs);
+router.get('/documentacion_mis', verificarToken, authorize(['CONDUCTOR', 'ADMIN']), documentacionController.getMyDocs);
 
 // Rutas para Admin (Validación)
 router.patch('/documentacion_validate/:id', verificarToken, authorize(['ADMIN']), documentacionController.validate);
+
+// Obtener TODA la documentacion de todos los usuarios (Admin)
+router.get('/todos', verificarToken, authorize(['ADMIN']), documentacionController.getAll);
+
+// Ver documentacion de un usuario especifico (Admin)
+router.get('/usuario/:idUsuario', verificarToken, authorize(['ADMIN']), documentacionController.getByUserIdAdmin);
 
 // Ver detalle documentacion
 router.get('/:id', verificarToken, authorize(['ADMIN']), documentacionController.getById);

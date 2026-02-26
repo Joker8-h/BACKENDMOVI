@@ -147,6 +147,44 @@ const documentacionController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    // Obtener documentación de un usuario específico (ADMIN)
+    async getByUserIdAdmin(req, res) {
+        try {
+            const { idUsuario } = req.params;
+            if (!idUsuario) {
+                return res.status(400).json({ error: "idUsuario es obligatorio" });
+            }
+            const docs = await documentacionService.getByUsuarioId(idUsuario);
+            if (!docs || docs.length === 0) {
+                return res.json({ message: "No se encontró documentación para este usuario" });
+            }
+            res.status(200).json(docs);
+        } catch (error) {
+            console.error("ERROR REAL ", error);
+            res.status(500).json({
+                error: "Error al obtener documentación del usuario",
+                detalle: error.message
+            });
+        }
+    },
+
+    // Obtener toda la documentación (ADMIN)
+    async getAll(req, res) {
+        try {
+            const docs = await documentacionService.getAll();
+            if (!docs || docs.length === 0) {
+                return res.json({ message: "No hay documentación registrada" });
+            }
+            res.status(200).json(docs);
+        } catch (error) {
+            console.error("ERROR REAL ", error);
+            res.status(500).json({
+                error: "Error al obtener la documentación general",
+                detalle: error.message
+            });
+        }
     }
 };
 

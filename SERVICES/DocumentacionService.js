@@ -174,6 +174,25 @@ const documentacionService = {
       },
     });
   },
+
+  // Obtener toda la documentación (ADMIN)
+  async getAll() {
+    return await prisma.documentacion.findMany({
+      orderBy: {
+        fechaSubida: "desc",
+      },
+      include: {
+        usuario: {
+          select: {
+            idUsuarios: true,
+            nombre: true,
+            email: true,
+            rol: true,
+          },
+        },
+      },
+    });
+  },
 };
 
 module.exports = documentacionService;
