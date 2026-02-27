@@ -1,8 +1,18 @@
-const rutasService = require("../SERVICES/RutasService");
+const documentacionService = require("../SERVICES/DocumentacionService");
 
 const rutasController = {
     async create(req, res) {
         try {
+            const idUsuario = req.user.id;
+
+            // Verificar estado de documentación
+            const docs = await documentacionService.getByUsuarioId(idUsuario);
+            if (docs && docs.estado === 'RECHAZADO') {
+                return res.status(403).json({
+                    error: "No puedes crear rutas. Tu documentación ha sido rechazada. Por favor, actualízala."
+                });
+            }
+
             const { preview, origin, destination, preference, k } = req.body;
 
             // Si es una previsualización (Optimización), devolvemos las opciones de Python

@@ -1,8 +1,18 @@
-const viajesService = require("../SERVICES/ViajesService");
+const documentacionService = require("../SERVICES/DocumentacionService");
 
 const viajesController = {
     async create(req, res) {
         try {
+            const idUsuario = req.user.id;
+
+            // Verificar estado de documentación
+            const docs = await documentacionService.getByUsuarioId(idUsuario);
+            if (docs && docs.estado === 'RECHAZADO') {
+                return res.status(403).json({
+                    error: "No puedes publicar viajes. Tu documentación ha sido rechazada. Por favor, actualízala."
+                });
+            }
+
             const nuevoViaje = await viajesService.create(req.body);
             res.json(nuevoViaje);
         } catch (error) {
