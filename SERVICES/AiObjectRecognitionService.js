@@ -98,7 +98,18 @@ const aiObjectRecognitionService = {
                 error: false
             };
         } catch (error) {
-            console.error("[AI-BRIDGE] Error en validación de placa:", error.message);
+            console.error("[AI-BRIDGE] Error detallado en validación de placa:");
+            if (error.response) {
+                // El servidor respondió con un estatus fuera del rango 2xx
+                console.error(" - Status:", error.response.status);
+                console.error(" - Data:", error.response.data);
+            } else if (error.request) {
+                // El request se hizo pero no hubo respuesta
+                console.error(" - No hubo respuesta del servidor (Request enviado)");
+            } else {
+                // Algo pasó al configurar la petición
+                console.error(" - Error Message:", error.message);
+            }
             return { is_detected: false, plate_text: null, confianza: 0, error: true, message: error.message };
         }
     }
