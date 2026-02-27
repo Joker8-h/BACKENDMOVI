@@ -64,6 +64,7 @@ const aiObjectRecognitionService = {
     get AI_PLATE_URL_URL() {
         // Obtenemos la URL base (que podría terminar en /verificar-placa o similar)
         let url = process.env.AI_PLATE_URL || "http://localhost:8000";
+        console.log(`[AI-BRIDGE-DEBUG] Raw process.env.AI_PLATE_URL: ${url}`);
 
         // Extraemos solo el dominio/base
         let baseUrl = url.split('/verificar-placa')[0];
