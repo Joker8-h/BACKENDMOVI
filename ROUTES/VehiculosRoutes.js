@@ -25,4 +25,7 @@ router.delete('/:id', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.del
 // Activar/Desactivar vehículo
 router.patch('/:id/estado', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.cambiarEstado);
 
+// Validar placa (Admin)
+router.patch('/:id/validar-placa', authorize(['ADMIN']), vehiculosController.validarPlacaAdmin);
+
 module.exports = router;

@@ -16,20 +16,22 @@ const vehiculosService = {
         // Validación automática de placa vía IA
         if (data.fotoVehiculo) {
             try {
+                // Usamos el servicio de IA para verificar la placa
                 const validacion = await aiService.verificarPlaca(data.fotoVehiculo);
 
-                // Si la placa detectada por OCR coincide con la placa ingresada manualmente
                 if (validacion.is_detected && validacion.plate_text) {
                     const placaLimpiaIngresada = data.placa.replace(/[^A-Z0-9]/gi, '').toUpperCase();
                     const placaLimpiaDetectada = validacion.plate_text.replace(/[^A-Z0-9]/gi, '').toUpperCase();
 
+                    // Si la placa detectada contiene a la ingresada o viceversa
                     if (placaLimpiaDetectada.includes(placaLimpiaIngresada) || placaLimpiaIngresada.includes(placaLimpiaDetectada)) {
                         data.placaValidada = true;
                         console.log(`[VEHICULOS] Placa ${data.placa} validada automáticamente por IA.`);
                     }
                 }
             } catch (err) {
-                console.error("[VEHICULOS] Error en validación IA de placa:", err.message);
+                console.warn("[VEHICULOS] No se pudo validar la placa por IA (servicio lento o caído):", err.message);
+                // No lanzamos error para permitir que el registro continúe y sea validado manualmente por Admin
             }
         }
 
@@ -109,6 +111,14 @@ const vehiculosService = {
         return await prisma.vehiculos.findUnique({
             where: { idVehiculos: parseInt(idVehiculo) },
             include: { usuario: { select: { nombre: true, email: true } } }
+        });
+    },
+
+    // Validar placa de forma manual (Admin)
+    async validarPlacaManual(idVehiculo, validada) {
+        return await prisma.vehiculos.update({
+            where: { idVehiculos: parseInt(idVehiculo) },
+            data: { placaValidada: !!validada }
         });
     }
 };

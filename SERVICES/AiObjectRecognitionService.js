@@ -61,20 +61,27 @@ const aiObjectRecognitionService = {
         }
     },
 
+    get AI_PLATE_URL_URL() {
+        let url = process.env.AI_PLATE_URL || "http://localhost:8000/verificar-placa-url";
+        if (url && !url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+        if (url && !url.includes('/verificar-placa-url')) {
+            url = url.endsWith('/') ? url + 'verificar-placa-url' : url + '/verificar-placa-url';
+        }
+        return url;
+    },
+
     /**
      * Envía una imagen para detectar placa y extraer texto vía OCR.
+     * Ahora optimizado para enviar la URL directamente a la IA.
      */
     async verificarPlaca(imageUrl) {
         try {
-            console.log(`[AI-BRIDGE] Verificando placa: ${imageUrl}`);
-            const responseImage = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-            const buffer = Buffer.from(responseImage.data, 'binary');
+            console.log(`[AI-BRIDGE] Verificando placa vía URL: ${imageUrl}`);
 
-            const form = new FormData();
-            form.append('file', buffer, { filename: 'plate_image.jpg', contentType: 'image/jpeg' });
-
-            const aiResponse = await axios.post(this.AI_PLATE_URL, form, {
-                headers: { ...form.getHeaders() }
+            const aiResponse = await axios.post(this.AI_PLATE_URL_URL, {
+                image_url: imageUrl
             });
 
             const { is_detected, plate_text, detections, message } = aiResponse.data;

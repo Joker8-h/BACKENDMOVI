@@ -1,4 +1,5 @@
 const vehiculosService = require("../SERVICES/VehiculosService");
+const cloudinaryService = require("../SERVICES/CloudinaryService");
 
 const vehiculosController = {
     async create(req, res) {
@@ -7,13 +8,22 @@ const vehiculosController = {
 
             const idUsuario = req.user.id;
 
+            let fotoVehiculoUrl = null;
+            if (fotoVehiculo) {
+                try {
+                    fotoVehiculoUrl = await cloudinaryService.subirImagen(fotoVehiculo, "vehiculos");
+                } catch (err) {
+                    console.error("[VEHICULOS] Error al subir foto a Cloudinary:", err.message);
+                }
+            }
+
             const nuevoVehiculo = await vehiculosService.create({
                 idUsuario,
                 marca,
                 modelo,
                 placa,
                 capacidad: parseInt(capacidad),
-                fotoVehiculo // Nueva propiedad
+                fotoVehiculo: fotoVehiculoUrl
             });
             res.json(nuevoVehiculo);
         } catch (error) {
@@ -75,6 +85,18 @@ const vehiculosController = {
             res.json(vehiculo);
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    },
+
+    async validarPlacaAdmin(req, res) {
+        try {
+            const { id } = req.params;
+            const { validada } = req.body;
+
+            const vehiculo = await vehiculosService.validarPlacaManual(id, validada);
+            res.json({ mensaje: "Estado de placa actualizado", vehiculo });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
         }
     }
 };
