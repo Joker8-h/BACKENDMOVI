@@ -28,4 +28,7 @@ router.patch('/:id/estado', authorize(['CONDUCTOR', 'ADMIN']), vehiculosControll
 // Validar placa (Admin)
 router.patch('/:id/validar-placa', authorize(['ADMIN']), vehiculosController.validarPlacaAdmin);
 
+// Extraer placa de foto (Solo conductores y Admin)
+router.post('/extraer-placa', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.extraerPlaca);
+
 module.exports = router;

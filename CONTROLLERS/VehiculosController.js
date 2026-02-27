@@ -98,6 +98,28 @@ const vehiculosController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
+    },
+
+    async extraerPlaca(req, res) {
+        try {
+            const { fotoVehiculo } = req.body;
+            if (!fotoVehiculo) return res.status(400).json({ error: "Falta la foto del vehículo" });
+
+            // 1. Subir a Cloudinary temporalmente o usar una carpeta específica
+            const fotoUrl = await cloudinaryService.subirImagen(fotoVehiculo, "temp_plates");
+
+            // 2. Analizar con IA
+            const result = await aiService.verificarPlaca(fotoUrl);
+
+            res.json({
+                plate_text: result.plate_text,
+                is_detected: result.is_detected,
+                fotoUrl: fotoUrl
+            });
+        } catch (error) {
+            console.error("[VEHICULOS] Error al extraer placa:", error.message);
+            res.status(500).json({ error: "Error al procesar la imagen de la placa" });
+        }
     }
 };
 
