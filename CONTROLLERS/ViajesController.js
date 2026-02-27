@@ -1,3 +1,4 @@
+const viajesService = require("../SERVICES/ViajesService");
 const documentacionService = require("../SERVICES/DocumentacionService");
 
 const viajesController = {
