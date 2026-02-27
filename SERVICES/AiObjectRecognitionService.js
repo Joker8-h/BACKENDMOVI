@@ -80,9 +80,11 @@ const aiObjectRecognitionService = {
      */
     async verificarPlaca(imageUrl) {
         try {
+            const finalUrl = this.AI_PLATE_URL_URL;
             console.log(`[AI-BRIDGE] Verificando placa vía URL: ${imageUrl}`);
+            console.log(`[AI-BRIDGE] Llamando a endpoint de IA: ${finalUrl}`);
 
-            const aiResponse = await axios.post(this.AI_PLATE_URL_URL, {
+            const aiResponse = await axios.post(finalUrl, {
                 image_url: imageUrl
             });
 

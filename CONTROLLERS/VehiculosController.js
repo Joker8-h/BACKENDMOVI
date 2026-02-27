@@ -107,10 +107,14 @@ const vehiculosController = {
             if (!fotoVehiculo) return res.status(400).json({ error: "Falta la foto del vehículo" });
 
             // 1. Subir a Cloudinary temporalmente o usar una carpeta específica
+            console.log("[VEHICULOS] Subiendo foto a Cloudinary...");
             const fotoUrl = await cloudinaryService.subirImagen(fotoVehiculo, "temp_plates");
+            console.log("[VEHICULOS] Foto subida exitosamente:", fotoUrl);
 
             // 2. Analizar con IA
+            console.log("[VEHICULOS] Llamando a aiService.verificarPlaca...");
             const result = await aiService.verificarPlaca(fotoUrl);
+            console.log("[VEHICULOS] Resultado de la IA:", result);
 
             res.json({
                 plate_text: result.plate_text,
@@ -118,8 +122,12 @@ const vehiculosController = {
                 fotoUrl: fotoUrl
             });
         } catch (error) {
-            console.error("[VEHICULOS] Error al extraer placa:", error.message);
-            res.status(500).json({ error: "Error al procesar la imagen de la placa" });
+            console.error("[VEHICULOS] Error al extraer placa:", error);
+            res.status(500).json({
+                error: "Error al procesar la imagen de la placa",
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
 };
