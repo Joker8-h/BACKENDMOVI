@@ -1,5 +1,6 @@
 const vehiculosService = require("../SERVICES/VehiculosService");
 const cloudinaryService = require("../SERVICES/CloudinaryService");
+const aiService = require("../SERVICES/AiObjectRecognitionService");
 
 const vehiculosController = {
     async create(req, res) {

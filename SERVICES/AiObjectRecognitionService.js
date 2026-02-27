@@ -62,14 +62,16 @@ const aiObjectRecognitionService = {
     },
 
     get AI_PLATE_URL_URL() {
-        let url = process.env.AI_PLATE_URL || "http://localhost:8000/verificar-placa-url";
-        if (url && !url.startsWith('http')) {
-            url = 'https://' + url;
-        }
-        if (url && !url.includes('/verificar-placa-url')) {
-            url = url.endsWith('/') ? url + 'verificar-placa-url' : url + '/verificar-placa-url';
-        }
-        return url;
+        // Obtenemos la URL base (que podría terminar en /verificar-placa o similar)
+        let url = process.env.AI_PLATE_URL || "http://localhost:8000";
+
+        // Extraemos solo el dominio/base
+        let baseUrl = url.split('/verificar-placa')[0];
+        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+        if (!baseUrl.startsWith('http')) baseUrl = 'https://' + baseUrl;
+
+        return `${baseUrl}/verificar-placa-url`;
     },
 
     /**
