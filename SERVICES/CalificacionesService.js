@@ -28,15 +28,47 @@ const calificacionesService = {
         return suma / calificaciones.length;
     },
 
-    async getById(id) {
-        return await prisma.calificaciones.findUnique({
-            where: { idCalificacion: parseInt(id) },
+    async getTopConductores(limit = 10) {
+        // 1. Obtener el ID del rol 'CONDUCTOR'
+        const rolConductor = await prisma.roles.findUnique({
+            where: { nombre: 'CONDUCTOR' }
+        });
+
+        if (!rolConductor) return [];
+
+        // 2. Buscar usuarios con ese rol e incluir sus calificaciones recibidas
+        const conductores = await prisma.usuarios.findMany({
+            where: {
+                idRol: rolConductor.idRol,
+                estado: 'ACTIVO'
+            },
             include: {
-                viaje: true,
-                calificador: { select: { nombre: true, email: true } },
-                calificado: { select: { nombre: true, email: true } }
+                calificacionesRecibidas: {
+                    select: { puntuacion: true }
+                }
             }
         });
+
+        // 3. Calcular el promedio para cada conductor
+        const conductoresConPromedio = conductores.map(c => {
+            const totalCalificaciones = c.calificacionesRecibidas.length;
+            const promedio = totalCalificaciones > 0
+                ? c.calificacionesRecibidas.reduce((acc, curr) => acc + curr.puntuacion, 0) / totalCalificaciones
+                : 0;
+
+            // Eliminar el array de calificaciones para la respuesta
+            const { calificacionesRecibidas, passwordHash, ...datosPublicos } = c;
+            return {
+                ...datosPublicos,
+                promedioEstrellas: parseFloat(promedio.toFixed(2)),
+                totalReseñas: totalCalificaciones
+            };
+        });
+
+        // 4. Ordenar por promedio descendente y tomar los mejores
+        return conductoresConPromedio
+            .sort((a, b) => b.promedioEstrellas - a.promedioEstrellas)
+            .slice(0, limit);
     }
 };
 

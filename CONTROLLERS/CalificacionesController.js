@@ -31,6 +31,15 @@ const calificacionesController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    async getTopConductores(req, res) {
+        try {
+            const top = await calificacionesService.getTopConductores(10);
+            res.json(top);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 
