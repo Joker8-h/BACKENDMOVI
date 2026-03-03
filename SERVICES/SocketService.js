@@ -46,6 +46,12 @@ class SocketService {
                 connectedAt: new Date()
             });
 
+            // Registrar inicio de sesión en BD
+            this.registrarInicioSesion(id).then(sesionId => {
+                socket.sesionId = sesionId;
+            });
+
+
             // Notificar y Guardar para Admins
             this.notifyAdmins("user_connected", {
                 id,
@@ -59,11 +65,17 @@ class SocketService {
                 console.log(`Usuario desconectado: ${userInfo?.nombre || 'Usuario'} - Socket: ${socket.id}`);
                 this.connectedUsers.delete(id);
 
+                // Registrar fin de sesión
+                if (socket.sesionId) {
+                    this.registrarFinSesion(socket.sesionId);
+                }
+
                 this.notifyAdmins("user_disconnected", {
                     id,
                     nombre: userInfo?.nombre || 'Usuario'
                 }, "Usuario Desconectado", `${userInfo?.nombre || 'Usuario'} ha salido del sistema.`);
             });
+
         });
 
         console.log("Socket.io inicializado correctamente");
@@ -126,6 +138,42 @@ class SocketService {
             `Se ha registrado un nuevo usuario: ${user.nombre} (${user.rol?.nombre || 'USUARIO'})`
         );
     }
+
+    async registrarInicioSesion(userId) {
+        try {
+            const sesion = await prisma.sesionesUsuario.create({
+                data: { idUsuario: userId }
+            });
+            return sesion.idSesion;
+        } catch (error) {
+            console.error("Error al registrar inicio de sesión:", error.message);
+            return null;
+        }
+    }
+
+    async registrarFinSesion(sesionId) {
+        try {
+            const sesion = await prisma.sesionesUsuario.findUnique({
+                where: { idSesion: sesionId }
+            });
+
+            if (sesion) {
+                const fin = new Date();
+                const duracionSegundos = Math.floor((fin - sesion.inicio) / 1000);
+
+                await prisma.sesionesUsuario.update({
+                    where: { idSesion: sesionId },
+                    data: {
+                        fin,
+                        duracionSegundos
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Error al registrar fin de sesión:", error.message);
+        }
+    }
 }
+
 
 module.exports = new SocketService();

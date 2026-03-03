@@ -42,6 +42,8 @@ const planesConductorRoutes = require('./ROUTES/PlanesConductorRoutes');
 const iaRutasLogRoutes = require('./ROUTES/IaRutasLogRoutes');
 const documentacionRoutes = require('./ROUTES/DocumentacionRoutes');
 const notificacionesRoutes = require('./ROUTES/NotificacionesRoutes');
+const estadisticasRoutes = require('./ROUTES/EstadisticasRoutes');
+
 
 // Usar Rutas
 app.use('/api/auth', authRoutes);
@@ -60,6 +62,8 @@ app.use('/api/planes-conductor', planesConductorRoutes);
 app.use('/api/ia-rutas-log', iaRutasLogRoutes);
 app.use('/api/documentacion', documentacionRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/estadisticas', estadisticasRoutes);
+
 
 
 

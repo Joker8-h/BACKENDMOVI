@@ -121,6 +121,7 @@ model Usuarios {
   suscripciones  SuscripcionesConductor[] // Usa el plan a través de Suscripciones
   viajes         UsuarioViaje[]
   notificaciones Notificacion[]
+  sesiones       SesionesUsuario[]
 
   calificacionesDadas     Calificaciones[] @relation("Calificador")
   calificacionesRecibidas Calificaciones[] @relation("Calificado")
@@ -389,4 +390,16 @@ model Notificacion {
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
 
   @@map("Notificaciones")
+}
+
+model SesionesUsuario {
+  idSesion         Int       @id @default(autoincrement())
+  idUsuario        Int
+  inicio           DateTime  @default(now())
+  fin              DateTime?
+  duracionSegundos Int?
+
+  usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+
+  @@map("SesionesUsuario")
 }
