@@ -458,6 +458,47 @@ const authService = {
         const { passwordHash: _, ...usuarioSinPassword } = usuario;
         return usuarioSinPassword;
     },
+
+    async buscarGlobal(query) {
+        return await prisma.usuarios.findMany({
+            where: {
+                OR: [
+                    { nombre: { contains: query } },
+                    { email: { contains: query } },
+                    { documentacion: { numeroDocumento: { contains: query } } },
+                    { vehiculos: { some: { placa: { contains: query } } } }
+                ]
+            },
+            select: {
+                idUsuarios: true,
+                nombre: true,
+                email: true,
+                telefono: true,
+                estado: true,
+                creadoEn: true,
+                rol: true,
+                documentacion: {
+                    select: {
+                        numeroDocumento: true,
+                        tipoDocumento: true,
+                        estado: true
+                    }
+                },
+                vehiculos: {
+                    select: {
+                        idVehiculos: true,
+                        placa: true,
+                        marca: true,
+                        modelo: true
+                    }
+                }
+
+            },
+            orderBy: {
+                nombre: 'asc'
+            }
+        });
+    }
 };
 
 module.exports = authService;

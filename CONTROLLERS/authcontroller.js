@@ -205,8 +205,19 @@ const authController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    async buscarUsuarios(req, res) {
+        try {
+            const { q } = req.query;
+            if (!q) {
+                return res.status(400).json({ error: "Debe proporcionar un término de búsqueda" });
+            }
+            const results = await authService.buscarGlobal(q);
+            res.json(results);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
-
-
 }
 module.exports = authController;
