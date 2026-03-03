@@ -416,10 +416,11 @@ model SolicitudCambioVehiculo {
   idSolicitud Int @id @default(autoincrement())
   idVehiculo  Int
 
-  marcaNueva     String? @db.VarChar(50)
-  modeloNuevo    String? @db.VarChar(50)
-  placaNueva     String? @db.VarChar(20)
-  capacidadNueva Int?
+  marcaNueva        String? @db.VarChar(50)
+  modeloNuevo       String? @db.VarChar(50)
+  placaNueva        String? @db.VarChar(20)
+  capacidadNueva    Int?
+  fotoPlacaNuevaUrl String? @db.VarChar(255)
 
   estado         EstadoSolicitudCambio @default(PENDIENTE)
   fechaSolicitud DateTime              @default(now())

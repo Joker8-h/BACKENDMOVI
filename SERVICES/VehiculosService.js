@@ -138,6 +138,7 @@ const vehiculosService = {
                 modeloNuevo: data.modelo,
                 placaNueva: data.placa,
                 capacidadNueva: data.capacidad ? parseInt(data.capacidad) : undefined,
+                fotoPlacaNuevaUrl: data.fotoPlacaNuevaUrl,
                 estado: 'PENDIENTE'
             }
         });

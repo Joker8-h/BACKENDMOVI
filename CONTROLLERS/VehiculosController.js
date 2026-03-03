@@ -135,8 +135,20 @@ const vehiculosController = {
     async solicitarCambio(req, res) {
         try {
             const { id } = req.params;
-            const data = req.body;
-            const solicitud = await vehiculosService.crearSolicitudCambio(id, data);
+            const { marca, modelo, placa, capacidad, fotoPlacaNueva } = req.body;
+
+            let fotoPlacaNuevaUrl = null;
+            if (fotoPlacaNueva) {
+                try {
+                    fotoPlacaNuevaUrl = await cloudinaryService.subirImagen(fotoPlacaNueva, "solicitudes_cambio");
+                } catch (err) {
+                    console.error("[VEHICULOS] Error al subir foto de placa a Cloudinary:", err.message);
+                }
+            }
+
+            const solicitud = await vehiculosService.crearSolicitudCambio(id, {
+                marca, modelo, placa, capacidad, fotoPlacaNuevaUrl
+            });
 
             // Notificar a los administradores
             const socketService = require("../SERVICES/SocketService");
