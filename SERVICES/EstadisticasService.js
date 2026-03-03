@@ -70,6 +70,45 @@ class EstadisticasService {
     }
 
     /**
+     * Obtener gastos de un pasajero por periodo
+     */
+    async obtenerGastosPasajero(idUsuario, periodo = 'mensual') {
+        const ahora = new Date();
+        let fechaInicio;
+
+        if (periodo === 'diario') {
+            fechaInicio = new Date(ahora.setHours(0, 0, 0, 0));
+        } else if (periodo === 'mensual') {
+            fechaInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+        } else if (periodo === 'anual') {
+            fechaInicio = new Date(ahora.getFullYear(), 0, 1);
+        }
+
+        const viajesPasajero = await prisma.usuarioViaje.findMany({
+            where: {
+                idUsuarios: idUsuario,
+                estado: 'COMPLETADO',
+                creadoEn: {
+                    gte: fechaInicio
+                }
+            },
+            select: {
+                precioFinal: true,
+                creadoEn: true
+            }
+        });
+
+        const totalGastos = viajesPasajero.reduce((acc, curr) => acc + Number(curr.precioFinal || 0), 0);
+        const historial = this.agruparGananciasPorPeriodo(viajesPasajero, periodo);
+
+        return {
+            total: totalGastos,
+            periodo,
+            historial
+        };
+    }
+
+    /**
      * Obtener resumen de viajes realizados
      */
     async obtenerResumenViajes(idUsuario, rol) {

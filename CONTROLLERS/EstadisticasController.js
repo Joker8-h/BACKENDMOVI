@@ -6,16 +6,22 @@ class EstadisticasController {
             const { idUsuarios, rol } = req.user;
             const { periodo } = req.query; // diario, mensual, anual
 
-            // Solo conductores pueden ver ganancias
-            if (!rol.includes('CONDUCTOR') && !rol.includes('ADMIN')) {
-                return res.status(403).json({ message: "No tienes permiso para ver ganancias" });
+            // Si es conductor o admin, ver ganancias
+            if (rol.includes('CONDUCTOR') || rol.includes('ADMIN')) {
+                const data = await estadisticasService.obtenerGananciasConductor(idUsuarios, periodo);
+                return res.json(data);
             }
 
-            const data = await estadisticasService.obtenerGananciasConductor(idUsuarios, periodo);
-            res.json(data);
+            // Si es viajero/pasajero, ver gastos
+            if (rol.includes('VIAJERO') || rol.includes('PASAJERO')) {
+                const data = await estadisticasService.obtenerGastosPasajero(idUsuarios, periodo);
+                return res.json(data);
+            }
+
+            return res.status(403).json({ message: "No tienes permiso para ver estadísticas" });
         } catch (error) {
             console.error("Error en getGanancias:", error);
-            res.status(500).json({ message: "Error al obtener ganancias" });
+            res.status(500).json({ message: "Error al obtener estadísticas" });
         }
     }
 
