@@ -113,6 +113,30 @@ class SocketService {
         }
     }
 
+    async notifyUser(userId, event, data, dbTitle, dbMessage, type = "SISTEMA") {
+        if (!this.io) return;
+
+        // 1. Emitir en tiempo real si está conectado
+        const userInfo = this.connectedUsers.get(parseInt(userId));
+        if (userInfo) {
+            this.io.to(userInfo.socketId).emit(event, data);
+        }
+
+        // 2. Persistir en la base de datos
+        if (dbTitle && dbMessage) {
+            try {
+                await notificacionesService.crearNotificacion({
+                    idUsuario: parseInt(userId),
+                    titulo: dbTitle,
+                    mensaje: dbMessage,
+                    tipo: type
+                });
+            } catch (error) {
+                console.error(`Error al persistir notificación para usuario ${userId}:`, error.message);
+            }
+        }
+    }
+
     getOnlineUsers() {
         return Array.from(this.connectedUsers.entries()).map(([id, info]) => ({
             id,

@@ -177,9 +177,45 @@ const vehiculosController = {
             const { id } = req.params;
             const { aprobado, observaciones } = req.body;
             const resultado = await vehiculosService.procesarSolicitudCambio(id, aprobado, observaciones);
+
+            // Notificar al conductor
+            const socketService = require("../SERVICES/SocketService");
+            const solicitudCompleta = await require("@prisma/client").PrismaClient().solicitudCambioVehiculo.findUnique({
+                where: { idSolicitud: parseInt(id) },
+                include: { vehiculo: true }
+            });
+
+            if (solicitudCompleta && solicitudCompleta.vehiculo) {
+                const titulo = aprobado ? "Solicitud Aprobada" : "Solicitud Rechazada";
+                const mensaje = aprobado
+                    ? `Tu solicitud de cambio para el vehículo ${solicitudCompleta.vehiculo.marca} ha sido aprobada.`
+                    : `Tu solicitud de cambio para el vehículo ${solicitudCompleta.vehiculo.marca} ha sido rechazada. Motivo: ${observaciones || 'No especificado'}`;
+
+                socketService.notifyUser(
+                    solicitudCompleta.vehiculo.idUsuario,
+                    "vehicle_change_processed",
+                    { idSolicitud: id, aprobado, observaciones },
+                    titulo,
+                    mensaje,
+                    aprobado ? "SISTEMA" : "ALERTA"
+                );
+            }
+
             res.json({ mensaje: `Solicitud ${aprobado ? 'aprobada' : 'rechazada'} correctamente`, resultado });
         } catch (error) {
             res.status(400).json({ error: error.message });
+        }
+    },
+
+    // Obtener conteo de solicitudes pendientes (Admin)
+    async getSolicitudesPendientesCount(req, res) {
+        try {
+            const count = await require("@prisma/client").PrismaClient().solicitudCambioVehiculo.count({
+                where: { estado: 'PENDIENTE' }
+            });
+            res.json({ count });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     }
 };

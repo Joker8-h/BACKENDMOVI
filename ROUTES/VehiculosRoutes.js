@@ -39,6 +39,9 @@ router.post('/:id/solicitar-cambio', authorize(['CONDUCTOR']), vehiculosControll
 // Ver solicitudes de cambio: Solo Admin
 router.get('/solicitudes/pendientes', authorize(['ADMIN']), vehiculosController.getSolicitudesCambio);
 
+// Ver conteo de solicitudes pendientes: Solo Admin
+router.get('/solicitudes/pendientes/count', authorize(['ADMIN']), vehiculosController.getSolicitudesPendientesCount);
+
 // Procesar solicitud de cambio: Solo Admin
 router.patch('/solicitudes/:id/procesar', authorize(['ADMIN']), vehiculosController.procesarSolicitud);
 
