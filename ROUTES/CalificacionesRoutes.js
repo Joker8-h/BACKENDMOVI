@@ -7,6 +7,7 @@ router.use(verificarToken);
 
 router.post('/', calificacionesController.create);
 router.get('/top-conductores', calificacionesController.getTopConductores);
+router.get('/top-viajeros', calificacionesController.getTopViajeros);
 router.get('/:idUsuario/promedio', calificacionesController.getPromedio);
 router.get('/:id', calificacionesController.getById);
 

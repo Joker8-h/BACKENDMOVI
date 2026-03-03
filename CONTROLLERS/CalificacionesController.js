@@ -35,7 +35,16 @@ const calificacionesController = {
 
     async getTopConductores(req, res) {
         try {
-            const top = await calificacionesService.getTopConductores(10);
+            const top = await calificacionesService.getTopConductores(5);
+            res.json(top);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async getTopViajeros(req, res) {
+        try {
+            const top = await calificacionesService.getTopViajeros(5);
             res.json(top);
         } catch (error) {
             res.status(500).json({ error: error.message });
