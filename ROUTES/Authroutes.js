@@ -31,5 +31,6 @@ router.delete('/:id', verfificacion, authorize(['ADMIN']), authController.elimin
 router.get('/:id', verfificacion, authorize(['ADMIN', 'PASAJERO', 'CONDUCTOR']), authController.getUsuarioById);
 
 router.get('/usuarios/dia/:dia', verfificacion, authorize(['ADMIN']), authController.getUsuariosPorDia);
+router.get('/online-users', verfificacion, authorize(['ADMIN']), authController.getOnlineUsers);
 
 module.exports = router;

@@ -195,7 +195,18 @@ const authController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    async getOnlineUsers(req, res) {
+        try {
+            const socketService = require("../SERVICES/SocketService");
+            const onlineUsers = socketService.getOnlineUsers();
+            res.json(onlineUsers);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
+
 
 }
 module.exports = authController;
