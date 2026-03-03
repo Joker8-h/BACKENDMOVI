@@ -120,6 +120,89 @@ const vehiculosService = {
             where: { idVehiculos: parseInt(idVehiculo) },
             data: { placaValidada: !!validada }
         });
+    },
+
+    // --- FLUJO DE APROBACIÓN DE CAMBIOS ---
+
+    // Crear una solicitud de cambio de vehículo (Conductor)
+    async crearSolicitudCambio(idVehiculo, data) {
+        // Verificar que el vehículo existe
+        const vehiculo = await this.getById(idVehiculo);
+        if (!vehiculo) throw new Error("Vehículo no encontrado");
+
+        // Crear la solicitud
+        return await prisma.solicitudCambioVehiculo.create({
+            data: {
+                idVehiculo: parseInt(idVehiculo),
+                marcaNueva: data.marca,
+                modeloNuevo: data.modelo,
+                placaNueva: data.placa,
+                capacidadNueva: data.capacidad ? parseInt(data.capacidad) : undefined,
+                estado: 'PENDIENTE'
+            }
+        });
+    },
+
+    // Obtener todas las solicitudes pendientes (Admin)
+    async getSolicitudesCambio(estado = 'PENDIENTE') {
+        return await prisma.solicitudCambioVehiculo.findMany({
+            where: { estado },
+            include: {
+                vehiculo: {
+                    include: {
+                        usuario: { select: { nombre: true, email: true } }
+                    }
+                }
+            },
+            orderBy: { fechaSolicitud: 'desc' }
+        });
+    },
+
+    // Procesar una solicitud (Aprobar/Rechazar)
+    async procesarSolicitudCambio(idSolicitud, aprobado, observaciones = null) {
+        const solicitud = await prisma.solicitudCambioVehiculo.findUnique({
+            where: { idSolicitud: parseInt(idSolicitud) },
+            include: { vehiculo: true }
+        });
+
+        if (!solicitud) throw new Error("Solicitud no encontrada");
+        if (solicitud.estado !== 'PENDIENTE') throw new Error("Esta solicitud ya ha sido procesada");
+
+        if (aprobado) {
+            // 1. Actualizar el vehículo real
+            await prisma.vehiculos.update({
+                where: { idVehiculos: solicitud.idVehiculo },
+                data: {
+                    marca: solicitud.marcaNueva || undefined,
+                    modelo: solicitud.modeloNuevo || undefined,
+                    placa: solicitud.placaNueva || undefined,
+                    capacidad: solicitud.capacidadNueva || undefined,
+                    // Si cambia la placa, marcamos como no validada para que el admin la valide si es necesario
+                    // o podemos marcarla como validada si el admin ya revisó la solicitud
+                    placaValidada: solicitud.placaNueva ? true : undefined
+                }
+            });
+
+            // 2. Marcar solicitud como aprobada
+            return await prisma.solicitudCambioVehiculo.update({
+                where: { idSolicitud: parseInt(idSolicitud) },
+                data: {
+                    estado: 'APROBADO',
+                    fechaRevision: new Date(),
+                    observaciones: observaciones || "Cambios aplicados correctamente"
+                }
+            });
+        } else {
+            // Marcar solicitud como rechazada
+            return await prisma.solicitudCambioVehiculo.update({
+                where: { idSolicitud: parseInt(idSolicitud) },
+                data: {
+                    estado: 'RECHAZADO',
+                    fechaRevision: new Date(),
+                    observaciones: observaciones || "Solicitud rechazada por el administrador"
+                }
+            });
+        }
     }
 };
 

@@ -89,6 +89,12 @@ enum EstadoDocumentacion {
   RECHAZADO
 }
 
+enum EstadoSolicitudCambio {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
 /**
  * =======================
  * MODELOS
@@ -150,6 +156,8 @@ model Vehiculos {
 
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
   viajes  Viajes[]
+
+  solicitudes SolicitudCambioVehiculo[]
 }
 
 model Rutas {
@@ -402,4 +410,23 @@ model SesionesUsuario {
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
 
   @@map("SesionesUsuario")
+}
+
+model SolicitudCambioVehiculo {
+  idSolicitud Int @id @default(autoincrement())
+  idVehiculo  Int
+
+  marcaNueva     String? @db.VarChar(50)
+  modeloNuevo    String? @db.VarChar(50)
+  placaNueva     String? @db.VarChar(20)
+  capacidadNueva Int?
+
+  estado         EstadoSolicitudCambio @default(PENDIENTE)
+  fechaSolicitud DateTime              @default(now())
+  fechaRevision  DateTime?
+  observaciones  String?               @db.VarChar(255)
+
+  vehiculo Vehiculos @relation(fields: [idVehiculo], references: [idVehiculos])
+
+  @@map("SolicitudesCambioVehiculo")
 }

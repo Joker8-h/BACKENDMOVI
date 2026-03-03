@@ -129,6 +129,55 @@ const vehiculosController = {
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
+    },
+
+    // Solicitud de cambio de vehículo (Conductor)
+    async solicitarCambio(req, res) {
+        try {
+            const { id } = req.params;
+            const data = req.body;
+            const solicitud = await vehiculosService.crearSolicitudCambio(id, data);
+
+            // Notificar a los administradores
+            const socketService = require("../SERVICES/SocketService");
+            socketService.notifyAdmins(
+                "new_vehicle_change_request",
+                {
+                    idSolicitud: solicitud.idSolicitud,
+                    conductor: req.user.nombre,
+                    fecha: solicitud.fechaSolicitud
+                },
+                "Solicitud de Cambio de Vehículo",
+                `El conductor ${req.user.nombre} ha solicitado modificar los datos de su vehículo.`
+            );
+
+            res.json({ mensaje: "Solicitud de cambio enviada para aprobación del administrador", solicitud });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    // Ver todas las solicitudes (Admin)
+    async getSolicitudesCambio(req, res) {
+        try {
+            const { estado } = req.query;
+            const solicitudes = await vehiculosService.getSolicitudesCambio(estado);
+            res.json(solicitudes);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // Aprobar/Rechazar solicitud (Admin)
+    async procesarSolicitud(req, res) {
+        try {
+            const { id } = req.params;
+            const { aprobado, observaciones } = req.body;
+            const resultado = await vehiculosService.procesarSolicitudCambio(id, aprobado, observaciones);
+            res.json({ mensaje: `Solicitud ${aprobado ? 'aprobada' : 'rechazada'} correctamente`, resultado });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
 };
 

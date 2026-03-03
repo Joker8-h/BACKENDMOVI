@@ -31,4 +31,15 @@ router.patch('/:id/validar-placa', authorize(['ADMIN']), vehiculosController.val
 // Extraer placa de foto (Solo conductores y Admin)
 router.post('/extraer-placa', authorize(['CONDUCTOR', 'ADMIN']), vehiculosController.extraerPlaca);
 
+// --- FLUJO DE APROBACIÓN DE CAMBIOS ---
+
+// Solicitar cambio de vehículo: Solo Conductores
+router.post('/:id/solicitar-cambio', authorize(['CONDUCTOR']), vehiculosController.solicitarCambio);
+
+// Ver solicitudes de cambio: Solo Admin
+router.get('/solicitudes/pendientes', authorize(['ADMIN']), vehiculosController.getSolicitudesCambio);
+
+// Procesar solicitud de cambio: Solo Admin
+router.patch('/solicitudes/:id/procesar', authorize(['ADMIN']), vehiculosController.procesarSolicitud);
+
 module.exports = router;
