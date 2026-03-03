@@ -210,8 +210,10 @@ const authService = {
             {
                 id: usuario.idUsuarios, // ID del usuario
                 email: usuario.email,
+                nombre: usuario.nombre, // Agregamos el nombre
                 idRol: usuario.idRol,   // ID del rol (para middleware)
                 rol: usuario.rol.nombre // Nombre del rol (para frontend)
+
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
@@ -250,8 +252,10 @@ const authService = {
             {
                 id: usuario.idUsuarios,
                 email: usuario.email,
+                nombre: usuario.nombre, // Agregamos el nombre
                 idRol: usuario.idRol,
                 rol: usuario.rol.nombre
+
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }

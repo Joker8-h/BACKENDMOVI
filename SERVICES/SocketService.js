@@ -1,6 +1,9 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro";
+const notificacionesService = require("./NotificacionesService");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 class SocketService {
     constructor() {
@@ -34,43 +37,66 @@ class SocketService {
         this.io.on("connection", (socket) => {
             const { id, rol, nombre } = socket.user;
 
-            console.log(`Usuario conectado: ${nombre} (${rol}) - Socket: ${socket.id}`);
+            console.log(`Usuario conectado: ${nombre || 'Usuario'} (${rol}) - Socket: ${socket.id}`);
 
             this.connectedUsers.set(id, {
                 socketId: socket.id,
                 role: rol,
-                nombre,
+                nombre: nombre || 'Usuario',
                 connectedAt: new Date()
             });
 
-            // Notificar a los admins que alguien se conectó
-            this.emitToAdmins("user_connected", {
+            // Notificar y Guardar para Admins
+            this.notifyAdmins("user_connected", {
                 id,
-                nombre,
+                nombre: nombre || 'Usuario',
                 rol,
                 socketId: socket.id
-            });
+            }, "Nueva Conexión", `${nombre || 'Usuario'} se ha conectado al sistema.`);
 
             socket.on("disconnect", () => {
-                console.log(`Usuario desconectado: ${nombre} - Socket: ${socket.id}`);
+                const userInfo = this.connectedUsers.get(id);
+                console.log(`Usuario desconectado: ${userInfo?.nombre || 'Usuario'} - Socket: ${socket.id}`);
                 this.connectedUsers.delete(id);
 
-                this.emitToAdmins("user_disconnected", {
+                this.notifyAdmins("user_disconnected", {
                     id,
-                    nombre
-                });
+                    nombre: userInfo?.nombre || 'Usuario'
+                }, "Usuario Desconectado", `${userInfo?.nombre || 'Usuario'} ha salido del sistema.`);
             });
         });
 
         console.log("Socket.io inicializado correctamente");
     }
 
-    emitToAdmins(event, data) {
+    async notifyAdmins(event, data, dbTitle, dbMessage) {
         if (!this.io) return;
 
+        // 1. Emitir en tiempo real
         for (const [userId, userInfo] of this.connectedUsers.entries()) {
             if (userInfo.role === "ADMIN") {
                 this.io.to(userInfo.socketId).emit(event, data);
+            }
+        }
+
+        // 2. Persistir en la base de datos para todos los administradores
+        if (dbTitle && dbMessage) {
+            try {
+                const admins = await prisma.usuarios.findMany({
+                    where: { rol: { nombre: 'ADMIN' } },
+                    select: { idUsuarios: true }
+                });
+
+                for (const admin of admins) {
+                    await notificacionesService.crearNotificacion({
+                        idUsuario: admin.idUsuarios,
+                        titulo: dbTitle,
+                        mensaje: dbMessage,
+                        tipo: "SISTEMA"
+                    });
+                }
+            } catch (error) {
+                console.error("Error al persistir notificación para admins:", error.message);
             }
         }
     }
@@ -84,14 +110,21 @@ class SocketService {
         }));
     }
 
-    notifyNewRegistration(user) {
-        this.emitToAdmins("new_user_registration", {
+    async notifyNewRegistration(user) {
+        const payload = {
             id: user.idUsuarios,
             nombre: user.nombre,
             email: user.email,
-            rol: user.rol.nombre,
+            rol: user.rol?.nombre || 'USUARIO',
             fecha: new Date()
-        });
+        };
+
+        this.notifyAdmins(
+            "new_user_registration",
+            payload,
+            "Nuevo Registro",
+            `Se ha registrado un nuevo usuario: ${user.nombre} (${user.rol?.nombre || 'USUARIO'})`
+        );
     }
 }
 
