@@ -62,15 +62,24 @@ const calificacionesService = {
 
         if (roleIds.length === 0) return [];
 
-        // 2. Agrupar calificaciones por usuario calificado
+        // NUEVO: Obtener IDs de usuarios con estos roles primero
+        // Esto es mucho más robusto que filtrar por relación dentro de groupBy
+        const usersWithRole = await prisma.usuarios.findMany({
+            where: {
+                idRol: { in: roleIds }
+                // No filtramos por estado aquí tampoco para ser lo más permisivos posible
+            },
+            select: { idUsuarios: true }
+        });
+
+        const targetUserIds = usersWithRole.map(u => u.idUsuarios);
+        if (targetUserIds.length === 0) return [];
+
+        // 2. Agrupar calificaciones por usuario calificado, filtrando por los IDs obtenidos
         const topRatings = await prisma.calificaciones.groupBy({
             by: ['idCalificado'],
             where: {
-                calificado: {
-                    idRol: { in: roleIds }
-                    // Quitamos temporalmente el filtro de estado ACTIVO para depuración
-                    // estado: 'ACTIVO'
-                }
+                idCalificado: { in: targetUserIds }
             },
             _avg: { puntuacion: true },
             _count: { idCalificacion: true },
