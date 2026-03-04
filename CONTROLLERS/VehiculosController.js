@@ -1,6 +1,8 @@
 const vehiculosService = require("../SERVICES/VehiculosService");
 const cloudinaryService = require("../SERVICES/CloudinaryService");
 const aiService = require("../SERVICES/AiObjectRecognitionService");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 const vehiculosController = {
     async create(req, res) {
@@ -180,7 +182,7 @@ const vehiculosController = {
 
             // Notificar al conductor
             const socketService = require("../SERVICES/SocketService");
-            const solicitudCompleta = await require("@prisma/client").PrismaClient().solicitudCambioVehiculo.findUnique({
+            const solicitudCompleta = await prisma.solicitudCambioVehiculo.findUnique({
                 where: { idSolicitud: parseInt(id) },
                 include: { vehiculo: true }
             });
@@ -210,7 +212,7 @@ const vehiculosController = {
     // Obtener conteo de solicitudes pendientes (Admin)
     async getSolicitudesPendientesCount(req, res) {
         try {
-            const count = await require("@prisma/client").PrismaClient().solicitudCambioVehiculo.count({
+            const count = await prisma.solicitudCambioVehiculo.count({
                 where: { estado: 'PENDIENTE' }
             });
             res.json({ count });
