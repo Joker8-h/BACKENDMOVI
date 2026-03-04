@@ -168,17 +168,13 @@ const vehiculosService = {
         if (solicitud.estado !== 'PENDIENTE') throw new Error("Esta solicitud ya ha sido procesada");
 
         if (aprobado) {
-            // 1. Actualizar el vehículo real
+            // 1. Actualizar el vehículo real (sin modificar la placa)
             await prisma.vehiculos.update({
                 where: { idVehiculos: solicitud.idVehiculo },
                 data: {
                     marca: solicitud.marcaNueva || undefined,
                     modelo: solicitud.modeloNuevo || undefined,
-                    placa: solicitud.placaNueva || undefined,
-                    capacidad: solicitud.capacidadNueva || undefined,
-                    // Si cambia la placa, marcamos como no validada para que el admin la valide si es necesario
-                    // o podemos marcarla como validada si el admin ya revisó la solicitud
-                    placaValidada: solicitud.placaNueva ? true : undefined
+                    capacidad: solicitud.capacidadNueva || undefined
                 }
             });
 
