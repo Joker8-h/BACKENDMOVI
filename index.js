@@ -43,7 +43,7 @@ const iaRutasLogRoutes = require('./ROUTES/IaRutasLogRoutes');
 const documentacionRoutes = require('./ROUTES/DocumentacionRoutes');
 const notificacionesRoutes = require('./ROUTES/NotificacionesRoutes');
 const estadisticasRoutes = require('./ROUTES/EstadisticasRoutes');
-
+const contactoRoutes = require('./ROUTES/contactoroutes');
 
 // Usar Rutas
 app.use('/api/auth', authRoutes);
@@ -63,7 +63,7 @@ app.use('/api/ia-rutas-log', iaRutasLogRoutes);
 app.use('/api/documentacion', documentacionRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
-
+app.use('/api/contacto', contactoRoutes);
 
 
 
