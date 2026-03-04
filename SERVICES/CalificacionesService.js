@@ -31,35 +31,43 @@ const calificacionesService = {
 
     async _getTopUsersByRole(roleNames, limit = 5) {
         try {
-            const possibleNames = Array.isArray(roleNames) ? roleNames : [roleNames];
+            const possibleNames = Array.isArray(roleNames)
+                ? roleNames.map(n => n.toUpperCase().trim())
+                : [roleNames.toUpperCase().trim()];
 
-            // Usamos queryRaw para un control total sobre JOINs y agrupaciones
-            // Esto evita problemas con Prisma groupBy y relaciones complejas
-            const topUsers = await prisma.$queryRaw`
+            // Obtenemos TODOS los usuarios calificados con sus roles
+            // Esto es más pesado pero asegura encontrar los datos si los nombres de rol varían levemente
+            const allRatedUsers = await prisma.$queryRaw`
                 SELECT 
                     u.idUsuarios, 
                     u.nombre, 
                     u.email, 
                     u.fotoPerfil, 
                     u.telefono,
+                    r.nombre as rolNombre,
                     AVG(c.puntuacion) as promedioEstrellas,
                     COUNT(c.idCalificacion) as totalReseñas
                 FROM Usuarios u
                 JOIN Calificaciones c ON u.idUsuarios = c.idCalificado
                 JOIN Roles r ON u.idRol = r.idRol
-                WHERE r.nombre IN (${possibleNames[0]}, ${possibleNames[1] || possibleNames[0]}, ${possibleNames[2] || possibleNames[0]})
-                GROUP BY u.idUsuarios
+                GROUP BY u.idUsuarios, u.nombre, u.email, u.fotoPerfil, u.telefono, r.nombre
                 ORDER BY promedioEstrellas DESC, totalReseñas DESC
-                LIMIT ${parseInt(limit)}
             `;
 
-            return topUsers.map(user => ({
-                ...user,
-                // queryRaw a veces devuelve tipos especiales o strings para AVG/COUNT
-                promedioEstrellas: parseFloat(Number(user.promedioEstrellas || 0).toFixed(2)),
-                totalReseñas: Number(user.totalReseñas || 0)
-            }));
+            // Filtramos en JS para mayor flexibilidad
+            const filtered = allRatedUsers
+                .filter(u => {
+                    const dbRole = (u.rolNombre || "").toUpperCase().trim();
+                    return possibleNames.some(name => dbRole.includes(name));
+                })
+                .slice(0, limit)
+                .map(user => ({
+                    ...user,
+                    promedioEstrellas: parseFloat(Number(user.promedioEstrellas || 0).toFixed(2)),
+                    totalReseñas: Number(user.totalReseñas || 0)
+                }));
 
+            return filtered;
         } catch (error) {
             console.error("Error en _getTopUsersByRole (queryRaw):", error);
             return [];
