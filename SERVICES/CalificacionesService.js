@@ -29,21 +29,47 @@ const calificacionesService = {
         };
     },
 
-    async _getTopUsersByRole(roleName, limit = 5) {
-        // 1. Obtener el rol
-        const rol = await prisma.roles.findUnique({
-            where: { nombre: roleName }
+    async _getTopUsersByRole(roleNames, limit = 5) {
+        // En lugar de un solo nombre, aceptamos un array de posibles nombres
+        const possibleNames = Array.isArray(roleNames) ? roleNames : [roleNames];
+
+        // 1. Obtener los IDs de los roles que coincidan
+        const roles = await prisma.roles.findMany({
+            where: {
+                nombre: {
+                    in: possibleNames,
+                    // Algunos DBs son case-sensitive, Prisma lo maneja según el provider
+                }
+            }
         });
 
-        if (!rol) return [];
+        // Si no se encontró el rol exacto, intentamos búsqueda más flexible (case-insensitive si es posible)
+        if (roles.length === 0) {
+            const allRoles = await prisma.roles.findMany();
+            const matchedRoles = allRoles.filter(r =>
+                possibleNames.some(name => r.nombre.toUpperCase() === name.toUpperCase())
+            );
+            roles.push(...matchedRoles);
+        }
 
-        // 2. Agrupar calificaciones por usuario calificado, filtrando por el rol del calificado
+        let roleIds = roles.map(r => r.idRol);
+
+        // Fallback a IDs conocidos si no se encontraron roles por nombre
+        if (roleIds.length === 0) {
+            if (possibleNames.includes('CONDUCTOR')) roleIds.push(2);
+            if (possibleNames.includes('VIAJERO') || possibleNames.includes('PASAJERO')) roleIds.push(3);
+        }
+
+        if (roleIds.length === 0) return [];
+
+        // 2. Agrupar calificaciones por usuario calificado
         const topRatings = await prisma.calificaciones.groupBy({
             by: ['idCalificado'],
             where: {
                 calificado: {
-                    idRol: rol.idRol,
-                    estado: 'ACTIVO'
+                    idRol: { in: roleIds }
+                    // Quitamos temporalmente el filtro de estado ACTIVO para depuración
+                    // estado: 'ACTIVO'
                 }
             },
             _avg: { puntuacion: true },
@@ -70,27 +96,26 @@ const calificacionesService = {
         });
 
         // 4. Combinar datos
-        return topRatings.map(rating => {
-            const user = users.find(u => u.idUsuarios === rating.idCalificado);
-            return {
-                ...user,
-                promedioEstrellas: parseFloat((rating._avg.puntuacion || 0).toFixed(2)),
-                totalReseñas: rating._count.idCalificacion || 0
-            };
-        }).sort((a, b) => b.promedioEstrellas - a.promedioEstrellas);
+        return topRatings
+            .map(rating => {
+                const user = users.find(u => u.idUsuarios === rating.idCalificado);
+                if (!user) return null;
+                return {
+                    ...user,
+                    promedioEstrellas: parseFloat((rating._avg.puntuacion || 0).toFixed(2)),
+                    totalReseñas: rating._count.idCalificacion || 0
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => b.promedioEstrellas - a.promedioEstrellas);
     },
 
     async getTopConductores(limit = 5) {
-        return this._getTopUsersByRole('CONDUCTOR', limit);
+        return this._getTopUsersByRole(['CONDUCTOR', 'DRIVER'], limit);
     },
 
     async getTopViajeros(limit = 5) {
-        // Intentar con nombres comunes si uno falla
-        let results = await this._getTopUsersByRole('VIAJERO', limit);
-        if (results.length === 0) {
-            results = await this._getTopUsersByRole('PASAJERO', limit);
-        }
-        return results;
+        return this._getTopUsersByRole(['VIAJERO', 'PASAJERO', 'PASSENGER'], limit);
     }
 };
 
