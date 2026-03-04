@@ -1,27 +1,23 @@
-const nodemailer = require('nodemailer');
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
+const client = SibApiV3Sdk.ApiClient.instance;
+const apiKey = client.authentications['api-key'];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
 
 const enviarCorreoContacto = async ({ nombre, correo, tipo, mensaje }) => {
 
-  await transporter.verify();
-
-  const mailOptions = {
-    from: `"Formulario Web" <${process.env.EMAIL_USER}>`,
-    to: process.env.EMAIL_USER,
+  const email = {
+    sender: {
+      name: "Formulario Web",
+      email: process.env.EMAIL_USER
+    },
+    to: [{
+      email: process.env.EMAIL_USER
+    }],
     subject: `Nuevo mensaje - ${tipo}`,
-    html: `
+    htmlContent: `
       <h2>Nuevo mensaje desde la web</h2>
       <p><strong>Nombre:</strong> ${nombre}</p>
       <p><strong>Correo:</strong> ${correo}</p>
@@ -31,7 +27,7 @@ const enviarCorreoContacto = async ({ nombre, correo, tipo, mensaje }) => {
     `
   };
 
-  await transporter.sendMail(mailOptions);
+  await apiInstance.sendTransacEmail(email);
 };
 
 module.exports = {
