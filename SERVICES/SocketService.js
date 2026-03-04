@@ -163,6 +163,21 @@ class SocketService {
         );
     }
 
+    async notifyNewDocument(user) {
+        const payload = {
+            id: user.id || user.idUsuarios,
+            nombre: user.nombre || 'Usuario',
+            fecha: new Date()
+        };
+
+        this.notifyAdmins(
+            "new_document_uploaded",
+            payload,
+            "Nueva Documentación",
+            `${user.nombre || 'Un usuario'} ha subido nueva documentación para revisión.`
+        );
+    }
+
     async registrarInicioSesion(userId) {
         try {
             const sesion = await prisma.sesionesUsuario.create({

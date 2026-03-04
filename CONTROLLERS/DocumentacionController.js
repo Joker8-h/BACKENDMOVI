@@ -52,6 +52,15 @@ const documentacionController = {
             };
 
             console.log("[DocumentacionController] Enviando respuesta exitosa al frontend...");
+
+            // Notificar a los admins en tiempo real
+            try {
+                const socketService = require("../SERVICES/SocketService");
+                socketService.notifyNewDocument({ id: idUsuario, nombre: req.user.nombre || 'Usuario' });
+            } catch (socketErr) {
+                console.error("Error al notificar documento:", socketErr.message);
+            }
+
             res.status(200).json(response);
 
         } catch (error) {

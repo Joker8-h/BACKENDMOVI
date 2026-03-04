@@ -46,6 +46,14 @@ const authController = {
                 fotoPerfil: imageUrl || null
             });
 
+            // Notificar a los admins en tiempo real
+            try {
+                const socketService = require("../SERVICES/SocketService");
+                socketService.notifyNewRegistration(usuario);
+            } catch (socketErr) {
+                console.error("Error al notificar registro:", socketErr.message);
+            }
+
             res.json({
                 mensaje: "Registro exitoso",
                 usuario,
