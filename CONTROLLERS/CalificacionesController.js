@@ -35,9 +35,12 @@ const calificacionesController = {
 
     async getTopConductores(req, res) {
         try {
+            console.log("[CONTROLLER] getTopConductores called");
             const top = await calificacionesService.getTopConductores(5);
+            console.log("[CONTROLLER] getTopConductores result:", JSON.stringify(top));
             res.json(top);
         } catch (error) {
+            console.error("[CONTROLLER] Error getTopConductores:", error);
             res.status(500).json({ error: error.message });
         }
     },

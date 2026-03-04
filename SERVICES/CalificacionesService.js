@@ -35,8 +35,9 @@ const calificacionesService = {
                 ? roleNames.map(n => n.toUpperCase().trim())
                 : [roleNames.toUpperCase().trim()];
 
+            console.log(`[TOP RANKING] Buscando top para roles: ${possibleNames.join(', ')}`);
+
             // Obtenemos TODOS los usuarios calificados con sus roles
-            // Esto es más pesado pero asegura encontrar los datos si los nombres de rol varían levemente
             const allRatedUsers = await prisma.$queryRaw`
                 SELECT 
                     u.idUsuarios, 
@@ -46,16 +47,34 @@ const calificacionesService = {
                     u.telefono,
                     r.nombre as rolNombre,
                     AVG(c.puntuacion) as promedioEstrellas,
-                    COUNT(c.idCalificacion) as totalReseñas
+                    COUNT(c.idCalificacion) as totalResenas
                 FROM Usuarios u
                 JOIN Calificaciones c ON u.idUsuarios = c.idCalificado
                 JOIN Roles r ON u.idRol = r.idRol
                 GROUP BY u.idUsuarios, u.nombre, u.email, u.fotoPerfil, u.telefono, r.nombre
-                ORDER BY promedioEstrellas DESC, totalReseñas DESC
+                ORDER BY promedioEstrellas DESC, totalResenas DESC
             `;
 
+            console.log(`[TOP RANKING] Total usuarios calificados encontrados: ${allRatedUsers.length}`);
+            allRatedUsers.forEach(u => {
+                console.log(`  - ${u.nombre} | Rol: "${u.rolNombre}" | Promedio: ${u.promedioEstrellas} | Reseñas: ${u.totalResenas}`);
+            });
+
+            // Convertir BigInt a Number (MySQL raw queries devuelven BigInt)
+            const serializable = allRatedUsers.map(user => {
+                const converted = {};
+                for (const [key, value] of Object.entries(user)) {
+                    if (typeof value === 'bigint') {
+                        converted[key] = Number(value);
+                    } else {
+                        converted[key] = value;
+                    }
+                }
+                return converted;
+            });
+
             // Filtramos en JS para mayor flexibilidad
-            const filtered = allRatedUsers
+            const filtered = serializable
                 .filter(u => {
                     const dbRole = (u.rolNombre || "").toUpperCase().trim();
                     return possibleNames.some(name => dbRole.includes(name));
@@ -64,8 +83,10 @@ const calificacionesService = {
                 .map(user => ({
                     ...user,
                     promedioEstrellas: parseFloat(Number(user.promedioEstrellas || 0).toFixed(2)),
-                    totalReseñas: Number(user.totalReseñas || 0)
+                    totalResenas: Number(user.totalResenas || 0)
                 }));
+
+            console.log(`[TOP RANKING] Filtrados para ${possibleNames.join(', ')}: ${filtered.length} usuarios`);
 
             return filtered;
         } catch (error) {
