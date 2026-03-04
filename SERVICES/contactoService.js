@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 const enviarCorreoContacto = async ({ nombre, correo, tipo, mensaje }) => {
 
-  await transporter.verify(); // para ver si conecta
+  await transporter.verify();
 
   const mailOptions = {
     from: `"Formulario Web" <${process.env.EMAIL_USER}>`,
