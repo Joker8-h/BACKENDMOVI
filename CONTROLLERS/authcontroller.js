@@ -228,26 +228,26 @@ const authController = {
         }
     },
 
-    async verifyOtp(req, res) {
+    async requestPreRegOtp(req, res) {
         try {
-            const { email, otp } = req.body;
-            if (!email || !otp) {
-                return res.status(400).json({ error: "Email y código OTP son requeridos" });
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).json({ error: "El email es requerido" });
             }
-            const resultado = await authService.verificarOtp(email, otp);
+            const resultado = await authService.solicitarOtpPreRegistro(email);
             res.json(resultado);
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
     },
 
-    async resendOtp(req, res) {
+    async verifyPreRegOtp(req, res) {
         try {
-            const { email } = req.body;
-            if (!email) {
-                return res.status(400).json({ error: "El email es requerido" });
+            const { email, otp } = req.body;
+            if (!email || !otp) {
+                return res.status(400).json({ error: "Email y código OTP son requeridos" });
             }
-            const resultado = await authService.reenviarOtp(email);
+            const resultado = await authService.validarOtpPreRegistro(email, otp);
             res.json(resultado);
         } catch (error) {
             res.status(400).json({ error: error.message });

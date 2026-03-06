@@ -436,3 +436,14 @@ model SolicitudCambioVehiculo {
 
   @@map("SolicitudesCambioVehiculo")
 }
+
+model EmailVerificacion {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique @db.VarChar(150)
+  otpCode    String   @db.VarChar(6)
+  otpExpiry  DateTime
+  verificado Boolean  @default(false)
+  creadoEn   DateTime @default(now())
+
+  @@map("EmailVerificaciones")
+}

@@ -15,8 +15,8 @@ const loginLimiter = rateLimit({
 
 router.post('/registro', authController.register);
 router.post('/login', loginLimiter, authController.login);
-router.post('/verify-otp', authController.verifyOtp);
-router.post('/resend-otp', authController.resendOtp);
+router.post('/request-pre-otp', authController.requestPreRegOtp);
+router.post('/verify-pre-otp', authController.verifyPreRegOtp);
 
 const authorize = require('../MIDDLEWARE/role.middleware.js');
 

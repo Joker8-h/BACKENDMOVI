@@ -101,10 +101,13 @@ const authService = {
             throw new Error("El usuario ya existe con ese correo electrónico.");
         }
 
-        // 3. Validar existencia real del correo (DNS MX)
-        const correoValido = await validarDominioCorreo(email);
-        if (!correoValido) {
-            throw new Error("El dominio del correo electrónico no parece existir o no puede recibir correos.");
+        // 3. Validar verificación previa del email
+        const verificacion = await prisma.emailVerificacion.findUnique({
+            where: { email }
+        });
+
+        if (!verificacion || !verificacion.verificado) {
+            throw new Error("El correo electrónico no ha sido verificado mediante OTP.");
         }
 
         // 2. Resolver el Rol (String -> ID)
@@ -132,9 +135,8 @@ const authService = {
                 telefono,
                 fotoPerfil,
                 idRol: rolDb.idRol,
-                estado: "INACTIVO", // Siempre inactivo hasta verificar correo
-                otpCode: Math.floor(100000 + Math.random() * 900000).toString(),
-                otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutos
+                estado: "ACTIVO",
+                isEmailVerified: true
             },
             include: {
                 rol: true
@@ -155,14 +157,14 @@ const authService = {
             console.error("Error al crear notificación de bienvenida:", notifError.message);
         }
 
-        // ENVIAR OTP POR CORREO
+        // 5. Limpiar registro de verificación temporal
         try {
-            await emailService.enviarOtp(newUsuario.email, newUsuario.otpCode, newUsuario.nombre);
-        } catch (emailError) {
-            console.error("Error al enviar OTP:", emailError.message);
+            await prisma.emailVerificacion.delete({ where: { email } });
+        } catch (e) {
+            console.error("Error al eliminar verificación temporal:", e.message);
         }
 
-        // 5. Retornar sin password
+        // 6. Retornar sin password
         const { passwordHash: _, ...usuarioSinPassword } = newUsuario;
         return usuarioSinPassword;
     },
@@ -511,67 +513,43 @@ const authService = {
         });
     },
 
-    async verificarOtp(email, otp) {
-        const usuario = await prisma.usuarios.findUnique({
-            where: { email }
+    async solicitarOtpPreRegistro(email) {
+        // 1. Verificar si el usuario ya existe
+        const usuarioExiste = await prisma.usuarios.findUnique({ where: { email } });
+        if (usuarioExiste) {
+            throw new Error("El correo ya está registrado.");
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+        await prisma.emailVerificacion.upsert({
+            where: { email },
+            update: { otpCode: otp, otpExpiry: expiry, verificado: false },
+            create: { email, otpCode: otp, otpExpiry: expiry }
         });
 
-        if (!usuario) {
-            throw new Error("Usuario no encontrado.");
-        }
-
-        if (usuario.isEmailVerified) {
-            return { mensaje: "El correo ya ha sido verificado anteriormente." };
-        }
-
-        if (usuario.otpCode !== otp) {
-            throw new Error("El código de verificación es incorrecto.");
-        }
-
-        if (new Date() > usuario.otpExpiry) {
-            throw new Error("El código de verificación ha expirado.");
-        }
-
-        // Marcar como verificado y activar usuario
-        const usuarioActualizado = await prisma.usuarios.update({
-            where: { idUsuarios: usuario.idUsuarios },
-            data: {
-                isEmailVerified: true,
-                estado: "ACTIVO",
-                otpCode: null,
-                otpExpiry: null
-            },
-            include: { rol: true }
-        });
-
-        return {
-            mensaje: "Correo verificado exitosamente. Ahora puedes iniciar sesión.",
-            usuario: usuarioActualizado
-        };
+        await emailService.enviarOtp(email, otp, "Usuario Nuevo");
+        return { mensaje: "Código enviado a tu correo." };
     },
 
-    async reenviarOtp(email) {
-        const usuario = await prisma.usuarios.findUnique({
-            where: { email }
+    async validarOtpPreRegistro(email, otp) {
+        const registro = await prisma.emailVerificacion.findUnique({ where: { email } });
+
+        if (!registro || registro.otpCode !== otp) {
+            throw new Error("Código incorrecto.");
+        }
+
+        if (new Date() > registro.otpExpiry) {
+            throw new Error("El código ha expirado.");
+        }
+
+        await prisma.emailVerificacion.update({
+            where: { email },
+            data: { verificado: true }
         });
 
-        if (!usuario) throw new Error("Usuario no encontrado.");
-        if (usuario.isEmailVerified) throw new Error("El correo ya está verificado.");
-
-        const nuevoOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        const nuevaExpiracion = new Date(Date.now() + 10 * 60 * 1000);
-
-        await prisma.usuarios.update({
-            where: { idUsuarios: usuario.idUsuarios },
-            data: {
-                otpCode: nuevoOtp,
-                otpExpiry: nuevaExpiracion
-            }
-        });
-
-        await emailService.enviarOtp(usuario.email, nuevoOtp, usuario.nombre);
-
-        return { mensaje: "Nuevo código de verificación enviado." };
+        return { mensaje: "Correo verificado correctamente.", verificado: true };
     }
 };
 
