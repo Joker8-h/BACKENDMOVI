@@ -6,15 +6,21 @@ class EstadisticasController {
             const { id, rol } = req.user;
             const { periodo } = req.query; // diario, mensual, anual
 
-            // Si es conductor o admin, ver ganancias
-            if (rol.includes('CONDUCTOR') || rol.includes('ADMIN')) {
-                const data = await estadisticasService.obtenerGananciasConductor(id, periodo);
+            // Si es admin, puede ver estadísticas globales
+            if (rol.includes('ADMIN')) {
+                const data = await estadisticasService.obtenerGananciasConductor(id, periodo, true);
                 return res.json(data);
             }
 
-            // Si es viajero/pasajero, ver gastos
+            // Si es conductor, ver sus ganancias
+            if (rol.includes('CONDUCTOR')) {
+                const data = await estadisticasService.obtenerGananciasConductor(id, periodo, false);
+                return res.json(data);
+            }
+
+            // Si es viajero/pasajero, ver sus gastos
             if (rol.includes('VIAJERO') || rol.includes('PASAJERO')) {
-                const data = await estadisticasService.obtenerGastosPasajero(id, periodo);
+                const data = await estadisticasService.obtenerGastosPasajero(id, periodo, false);
                 return res.json(data);
             }
 
@@ -25,10 +31,37 @@ class EstadisticasController {
         }
     }
 
+    async getIngresosGlobales(req, res) {
+        try {
+            const { rol } = req.user;
+            const { periodo } = req.query;
+
+            if (!rol.includes('ADMIN')) {
+                return res.status(403).json({ message: "No tienes permiso para ver ingresos globales" });
+            }
+
+            const data = await estadisticasService.obtenerGastosPasajero(null, periodo, true);
+            res.json(data);
+        } catch (error) {
+            console.error("Error en getIngresosGlobales:", error);
+            res.status(500).json({ message: "Error al obtener ingresos globales" });
+        }
+    }
+
     async getResumenViajes(req, res) {
         try {
             const { id, rol } = req.user;
-            const data = await estadisticasService.obtenerResumenViajes(id, rol);
+            const { periodo } = req.query;
+
+            // Si se pasa periodo, devolvemos historial para gráficas
+            const isGlobal = rol.includes('ADMIN');
+            if (periodo) {
+                const data = await estadisticasService.obtenerHistorialViajes(id, rol, periodo, isGlobal);
+                return res.json(data);
+            }
+
+            // Si no, devolvemos el resumen simple
+            const data = await estadisticasService.obtenerResumenViajes(id, rol, isGlobal);
             res.json(data);
         } catch (error) {
             console.error("Error en getResumenViajes:", error);
@@ -39,12 +72,13 @@ class EstadisticasController {
     async getMejoresRutas(req, res) {
         try {
             const { id, rol } = req.user;
+            const isGlobal = rol.includes('ADMIN');
 
             if (!rol.includes('CONDUCTOR') && !rol.includes('ADMIN')) {
                 return res.status(403).json({ message: "No tienes permiso para ver mejores rutas" });
             }
 
-            const data = await estadisticasService.obtenerMejoresRutas(id);
+            const data = await estadisticasService.obtenerMejoresRutas(id, 5, isGlobal);
             res.json(data);
         } catch (error) {
             console.error("Error en getMejoresRutas:", error);

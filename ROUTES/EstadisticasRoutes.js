@@ -21,6 +21,7 @@ const authenticateToken = (req, res, next) => {
 router.use(authenticateToken);
 
 router.get('/ganancias', estadisticasController.getGanancias);
+router.get('/ingresos', estadisticasController.getIngresosGlobales);
 router.get('/viajes', estadisticasController.getResumenViajes);
 router.get('/rutas', estadisticasController.getMejoresRutas);
 router.get('/online-time', estadisticasController.getOnlineTime);
