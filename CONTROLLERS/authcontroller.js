@@ -226,6 +226,32 @@ const authController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    async verifyOtp(req, res) {
+        try {
+            const { email, otp } = req.body;
+            if (!email || !otp) {
+                return res.status(400).json({ error: "Email y código OTP son requeridos" });
+            }
+            const resultado = await authService.verificarOtp(email, otp);
+            res.json(resultado);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    async resendOtp(req, res) {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).json({ error: "El email es requerido" });
+            }
+            const resultado = await authService.reenviarOtp(email);
+            res.json(resultado);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
 }
 module.exports = authController;

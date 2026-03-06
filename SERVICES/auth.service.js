@@ -10,6 +10,8 @@ const notificacionesService = require("./NotificacionesService");
 const JWT_SECRET = process.env.JWT_SECRET || "secreto_super_seguro";
 const JWT_EXPIRES_IN = process.env.EXPIRE_TIME || "1d";
 
+const emailService = require("./EmailService");
+
 /**
  * Valida que la contraseña cumpla con requisitos de seguridad
  * @param {string} password - Contraseña a validar
@@ -130,7 +132,9 @@ const authService = {
                 telefono,
                 fotoPerfil,
                 idRol: rolDb.idRol,
-                estado: nombreRol === "CONDUCTOR" ? "INACTIVO" : "ACTIVO",
+                estado: "INACTIVO", // Siempre inactivo hasta verificar correo
+                otpCode: Math.floor(100000 + Math.random() * 900000).toString(),
+                otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutos
             },
             include: {
                 rol: true
@@ -149,6 +153,13 @@ const authService = {
             });
         } catch (notifError) {
             console.error("Error al crear notificación de bienvenida:", notifError.message);
+        }
+
+        // ENVIAR OTP POR CORREO
+        try {
+            await emailService.enviarOtp(newUsuario.email, newUsuario.otpCode, newUsuario.nombre);
+        } catch (emailError) {
+            console.error("Error al enviar OTP:", emailError.message);
         }
 
         // 5. Retornar sin password
@@ -498,6 +509,69 @@ const authService = {
                 nombre: 'asc'
             }
         });
+    },
+
+    async verificarOtp(email, otp) {
+        const usuario = await prisma.usuarios.findUnique({
+            where: { email }
+        });
+
+        if (!usuario) {
+            throw new Error("Usuario no encontrado.");
+        }
+
+        if (usuario.isEmailVerified) {
+            return { mensaje: "El correo ya ha sido verificado anteriormente." };
+        }
+
+        if (usuario.otpCode !== otp) {
+            throw new Error("El código de verificación es incorrecto.");
+        }
+
+        if (new Date() > usuario.otpExpiry) {
+            throw new Error("El código de verificación ha expirado.");
+        }
+
+        // Marcar como verificado y activar usuario
+        const usuarioActualizado = await prisma.usuarios.update({
+            where: { idUsuarios: usuario.idUsuarios },
+            data: {
+                isEmailVerified: true,
+                estado: "ACTIVO",
+                otpCode: null,
+                otpExpiry: null
+            },
+            include: { rol: true }
+        });
+
+        return {
+            mensaje: "Correo verificado exitosamente. Ahora puedes iniciar sesión.",
+            usuario: usuarioActualizado
+        };
+    },
+
+    async reenviarOtp(email) {
+        const usuario = await prisma.usuarios.findUnique({
+            where: { email }
+        });
+
+        if (!usuario) throw new Error("Usuario no encontrado.");
+        if (usuario.isEmailVerified) throw new Error("El correo ya está verificado.");
+
+        const nuevoOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        const nuevaExpiracion = new Date(Date.now() + 10 * 60 * 1000);
+
+        await prisma.usuarios.update({
+            where: { idUsuarios: usuario.idUsuarios },
+            data: {
+                otpCode: nuevoOtp,
+                otpExpiry: nuevaExpiracion
+            }
+        });
+
+        await emailService.enviarOtp(usuario.email, nuevoOtp, usuario.nombre);
+
+        return { mensaje: "Nuevo código de verificación enviado." };
     }
 };
 

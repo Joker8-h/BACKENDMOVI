@@ -137,6 +137,11 @@ model Usuarios {
 
   documentacion Documentacion?
 
+  // Campos para verificación OTP
+  otpCode         String?   @db.VarChar(6)
+  otpExpiry       DateTime?
+  isEmailVerified Boolean   @default(false)
+
   @@map("Usuarios")
 }
 
