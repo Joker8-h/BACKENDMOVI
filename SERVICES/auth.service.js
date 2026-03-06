@@ -392,9 +392,20 @@ const authService = {
             select: {
                 idUsuarios: true,
                 nombre: true,
+                email: true,
                 estado: true
             }
         });
+
+        // Si el estado cambió a ACTIVO, enviar notificación por correo
+        if (estado === "ACTIVO" || estado === "activo") {
+            try {
+                await emailService.enviarNotificacionActivacion(usuarioActualizado.email, usuarioActualizado.nombre);
+            } catch (emailError) {
+                console.error("Error al enviar notificación de activación:", emailError.message);
+            }
+        }
+
         return usuarioActualizado;
     },
 

@@ -48,6 +48,47 @@ const EmailService = {
             console.error(`[EmailService] Error enviando OTP:`, error.message);
             throw new Error("No se pudo enviar el código de verificación por correo.");
         }
+    },
+
+    /**
+     * Notifica al usuario que su cuenta ha sido activada
+     * @param {string} emailDestino - Correo del destinatario
+     * @param {string} nombre - Nombre del usuario
+     */
+    async enviarNotificacionActivacion(emailDestino, nombre) {
+        try {
+            const email = {
+                sender: {
+                    name: "MoviFlex",
+                    email: process.env.EMAIL_USER || "no-reply@moviflex.com"
+                },
+                to: [{
+                    email: emailDestino
+                }],
+                subject: "¡Tu cuenta en MoviFlex ha sido activada!",
+                htmlContent: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <h2 style="color: #4acfbd; text-align: center;">¡Buenas noticias, ${nombre}!</h2>
+                        <p>Nos complace informarte que tu cuenta en <strong>MoviFlex</strong> ha sido activada satisfactoriamente por nuestro equipo administrativo.</p>
+                        <p>A partir de este momento, ya puedes iniciar sesión en la plataforma y comenzar a disfrutar de todos los servicios que tenemos para ti.</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://moviflex.com/login" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Iniciar Sesión ahora</a>
+                        </div>
+                        <p>¡Gracias por confiar en nosotros!</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #8899a6; text-align: center;">MoviFlex Team</p>
+                    </div>
+                `
+            };
+
+            const result = await apiInstance.sendTransacEmail(email);
+            console.log(`[EmailService] Notificación de activación enviada a ${emailDestino}. ID: ${result.messageId}`);
+            return true;
+        } catch (error) {
+            console.error(`[EmailService] Error enviando notificación de activación:`, error.message);
+            // No lanzamos error aquí para no bloquear el proceso de activación en la DB
+            return false;
+        }
     }
 };
 
