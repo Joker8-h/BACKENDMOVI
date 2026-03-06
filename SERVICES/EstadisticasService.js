@@ -39,7 +39,7 @@ class EstadisticasService {
         const totalGanancias = viajesConductor.reduce((acc, curr) => acc + Number(curr.precioFinal || 0), 0);
 
         // Agrupar por subperiodo para las gráficas
-        const historial = this.agruparGananciasPorPeriodo(viajesConductor, periodo);
+        const historial = this.agruparDatosPorPeriodo(viajesConductor, periodo, 'precioFinal');
 
         return {
             total: totalGanancias,
@@ -48,12 +48,15 @@ class EstadisticasService {
         };
     }
 
-    agruparGananciasPorPeriodo(viajes, periodo) {
+    /**
+     * Helper para agrupar datos (ganancias o gastos) por periodo
+     */
+    agruparDatosPorPeriodo(items, periodo, campoValor) {
         const grupos = {};
 
-        viajes.forEach(v => {
+        items.forEach(item => {
             let key;
-            const fecha = new Date(v.creadoEn);
+            const fecha = new Date(item.creadoEn || item.fechaPago || new Date());
             if (periodo === 'diario') {
                 key = `${fecha.getHours()}:00`;
             } else if (periodo === 'mensual') {
@@ -63,14 +66,17 @@ class EstadisticasService {
                 key = meses[fecha.getMonth()];
             }
 
-            grupos[key] = (grupos[key] || 0) + Number(v.precioFinal || 0);
+            grupos[key] = (grupos[key] || 0) + Number(item[campoValor] || 0);
         });
 
-        return Object.entries(grupos).map(([name, total]) => ({ name, value: total }));
+        return Object.entries(grupos).map(([name, value]) => ({
+            name,
+            value: Number(value.toFixed(2))
+        }));
     }
 
     /**
-     * Obtener gastos de un pasajero por periodo
+     * Obtener gastos de un pasajero por periodo (ahora basado en la tabla Pagos)
      */
     async obtenerGastosPasajero(idUsuario, periodo = 'mensual') {
         const ahora = new Date();
@@ -84,22 +90,23 @@ class EstadisticasService {
             fechaInicio = new Date(ahora.getFullYear(), 0, 1);
         }
 
-        const viajesPasajero = await prisma.usuarioViaje.findMany({
+        // Buscamos en la tabla Pagos que es más representativa de transacciones reales
+        const pagosPasajero = await prisma.pagos.findMany({
             where: {
-                idUsuarios: idUsuario,
-                estado: 'COMPLETADO',
-                creadoEn: {
+                idUsuario: idUsuario,
+                estado: 'PAGADO',
+                fechaPago: {
                     gte: fechaInicio
                 }
             },
             select: {
-                precioFinal: true,
-                creadoEn: true
+                monto: true,
+                fechaPago: true
             }
         });
 
-        const totalGastos = viajesPasajero.reduce((acc, curr) => acc + Number(curr.precioFinal || 0), 0);
-        const historial = this.agruparGananciasPorPeriodo(viajesPasajero, periodo);
+        const totalGastos = pagosPasajero.reduce((acc, curr) => acc + Number(curr.monto || 0), 0);
+        const historial = this.agruparDatosPorPeriodo(pagosPasajero, periodo, 'monto');
 
         return {
             total: totalGastos,
