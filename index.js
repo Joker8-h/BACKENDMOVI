@@ -44,6 +44,7 @@ const documentacionRoutes = require('./ROUTES/DocumentacionRoutes');
 const notificacionesRoutes = require('./ROUTES/NotificacionesRoutes');
 const estadisticasRoutes = require('./ROUTES/EstadisticasRoutes');
 const contactoRoutes = require('./ROUTES/contactoroutes');
+const reportesPagoRoutes = require('./ROUTES/ReportesPagoRoutes');
 
 // Usar Rutas
 app.use('/api/auth', authRoutes);
@@ -64,6 +65,7 @@ app.use('/api/documentacion', documentacionRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/contacto', contactoRoutes);
+app.use('/api/reportes-pago', reportesPagoRoutes);
 
 
 
@@ -80,3 +82,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
+// Inicializar tareas automáticas (cron jobs)
+const { initCronJobs } = require('./SERVICES/CronJobs');
+initCronJobs();

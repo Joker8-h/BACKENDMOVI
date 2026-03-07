@@ -95,6 +95,12 @@ enum EstadoSolicitudCambio {
   RECHAZADO
 }
 
+enum EstadoReportePago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
 /**
  * =======================
  * MODELOS
@@ -136,11 +142,13 @@ model Usuarios {
   conversacionesConductor Conversaciones[] @relation("ConversacionConductor")
 
   documentacion Documentacion?
+  reportesPago  ReportesPago[]
 
   // Campos para verificación OTP
-  otpCode         String?   @db.VarChar(6)
+  otpCode         String?        @db.VarChar(6)
   otpExpiry       DateTime?
-  isEmailVerified Boolean   @default(false)
+  isEmailVerified Boolean        @default(false)
+  reportesPagos   ReportesPago[]
 
   @@map("Usuarios")
 }
@@ -243,6 +251,7 @@ model UsuarioViaje {
   asientosReservados Int      @default(1)
   distanciaRecorrida Decimal? @db.Decimal(10, 2)
   precioFinal        Decimal? @db.Decimal(10, 2)
+  comisionPlataforma Decimal? @db.Decimal(10, 2)
 
   estado   EstadoUsuarioViaje @default(RESERVADO)
   creadoEn DateTime           @default(now())
@@ -446,4 +455,20 @@ model EmailVerificacion {
   creadoEn   DateTime @default(now())
 
   @@map("EmailVerificaciones")
+}
+
+model ReportesPago {
+  idReporte          Int               @id @default(autoincrement())
+  idUsuario          Int
+  mesCorrespondiente DateTime
+  montoComision      Decimal           @db.Decimal(10, 2)
+  fotoComprobante    String            @db.VarChar(500)
+  estado             EstadoReportePago @default(PENDIENTE)
+  fechaEnvio         DateTime          @default(now())
+  fechaRevision      DateTime?
+  observaciones      String?           @db.VarChar(255)
+
+  usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+
+  @@map("ReportesPago")
 }

@@ -99,6 +99,9 @@ const reservasService = {
         const tarifaPorKm = 500;
         const precioFinal = tarifaBase + (distanciaRecorrida * tarifaPorKm);
 
+        // Comisión plataforma: 10% del precio del viaje
+        const comisionPlataforma = precioFinal * 0.10;
+
 
         // 5. Crear reserva y descontar cupo en una transacción
         return await prisma.$transaction(async (tx) => {
@@ -124,6 +127,7 @@ const reservasService = {
                     asientosReservados: 1,
                     distanciaRecorrida: distanciaRecorrida,
                     precioFinal: precioFinal,
+                    comisionPlataforma: comisionPlataforma,
 
                     estado: 'RESERVADO'
                 }
