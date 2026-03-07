@@ -209,6 +209,41 @@ const viajesService = {
         });
     },
 
+    async getMisViajesPasajero(idUsuario) {
+        // Obtenemos los registros de UsuarioViaje (reservas) con el viaje incluido
+        const reservas = await prisma.usuarioViaje.findMany({
+            where: {
+                idUsuarios: parseInt(idUsuario)
+            },
+            include: {
+                viaje: {
+                    include: {
+                        ruta: true,
+                        vehiculo: {
+                            include: {
+                                usuario: {
+                                    select: { nombre: true, fotoPerfil: true }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                viaje: {
+                    fechaHoraSalida: 'desc'
+                }
+            }
+        });
+
+        // Mapeamos para que la estructura sea similar a la que espera el frontend
+        return reservas.map(res => ({
+            ...res.viaje,
+            precioFinal: res.precioFinal, // Agregamos el precio que pagó el pasajero
+            estadoReserva: res.estado    // Estado de la reserva específica
+        }));
+    },
+
     async obtenerViajesPorDiaSemana(dia) {
         const diasMapa = {
             'lunes': 0,

@@ -77,10 +77,21 @@ const viajesController = {
     async getMisViajes(req, res) {
         try {
             const idUsuario = req.user.id;
-            const viajes = await viajesService.getMisViajesConductor(idUsuario);
+            const rol = req.user.rol?.toUpperCase();
+
+            let viajes;
+            if (rol === 'CONDUCTOR') {
+                viajes = await viajesService.getMisViajesConductor(idUsuario);
+            } else if (rol === 'PASAJERO' || rol === 'VIAJERO') {
+                viajes = await viajesService.getMisViajesPasajero(idUsuario);
+            } else {
+                // Para ADMIN o si no hay rol claro, intentamos traer ambos o conductor por defecto
+                viajes = await viajesService.getMisViajesConductor(idUsuario);
+            }
+
             res.json(viajes);
         } catch (error) {
-            res.json({ error: error.message });
+            res.status(500).json({ error: error.message });
         }
     },
 
