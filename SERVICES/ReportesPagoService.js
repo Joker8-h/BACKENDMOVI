@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const notificacionesService = require('./NotificacionesService');
 const EmailService = require('./EmailService');
+const cloudinaryService = require('./CloudinaryService');
 
 const reportesPagoService = {
     /**
@@ -95,12 +96,21 @@ const reportesPagoService = {
             );
         }
 
+        let fotoUrl;
+        try {
+            console.log('[ReportesPago] Subiendo comprobante a Cloudinary...');
+            fotoUrl = await cloudinaryService.subirImagen(fotoComprobante, 'comprobantes_pago');
+        } catch (error) {
+            console.error('[ReportesPago] Error subiendo imagen:', error);
+            throw new Error('Error al guardar la imagen. Intenta de nuevo.');
+        }
+
         const reporte = await prisma.reportesPago.create({
             data: {
                 idUsuario,
                 mesCorrespondiente: inicioMes,
                 montoComision: comisionInfo.totalComision,
-                fotoComprobante,
+                fotoComprobante: fotoUrl,
                 estado: 'PENDIENTE'
             },
             include: {
