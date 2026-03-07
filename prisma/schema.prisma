@@ -145,10 +145,9 @@ model Usuarios {
   reportesPago  ReportesPago[]
 
   // Campos para verificación OTP
-  otpCode         String?        @db.VarChar(6)
+  otpCode         String?   @db.VarChar(6)
   otpExpiry       DateTime?
-  isEmailVerified Boolean        @default(false)
-  reportesPagos   ReportesPago[]
+  isEmailVerified Boolean   @default(false)
 
   @@map("Usuarios")
 }
