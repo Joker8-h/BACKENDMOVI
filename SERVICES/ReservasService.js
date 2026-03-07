@@ -94,13 +94,14 @@ const reservasService = {
         }
 
         // Precio base (ejemplo simple: $1500 + $500/km)
-        // Puedes ajustar esto según tu lógica de negocio
+        // Calculamos el subtotal del viaje
         const tarifaBase = 1500;
         const tarifaPorKm = 500;
-        const precioFinal = tarifaBase + (distanciaRecorrida * tarifaPorKm);
+        const subTotal = tarifaBase + (distanciaRecorrida * tarifaPorKm);
 
-        // Comisión plataforma: 10% del precio del viaje
-        const comisionPlataforma = precioFinal * 0.10;
+        // Comisión plataforma: 10% ADICIONAL al precio del viaje (El pasajero asume el costo)
+        const comisionPlataforma = subTotal * 0.10;
+        const precioFinal = subTotal + comisionPlataforma;
 
 
         // 5. Crear reserva y descontar cupo en una transacción
