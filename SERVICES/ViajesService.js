@@ -21,7 +21,8 @@ const viajesService = {
                 fechaHoraSalida: new Date(data.fechaHoraSalida),
                 cuposTotales,
                 cuposDisponibles: cuposTotales,
-                estado: 'CREADO'
+                estado: 'CREADO',
+                precio: parseFloat(data.precio)
             }
         });
     },
