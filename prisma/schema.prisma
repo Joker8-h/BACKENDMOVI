@@ -218,6 +218,7 @@ model Viajes {
   cuposDisponibles Int
 
   estado   EstadoViaje @default(CREADO)
+  precio   Decimal?    @db.Decimal(10, 2)
   creadoEn DateTime    @default(now())
 
   ruta     Rutas     @relation(fields: [idRuta], references: [idRuta])
