@@ -8,18 +8,52 @@ class EstadisticasController {
 
             // Si es admin, puede ver estadísticas globales
             if (rol.includes('ADMIN')) {
+                if (!periodo) {
+                    const hoy = await estadisticasService.obtenerGananciasConductor(null, 'diario', true);
+                    const esteMes = await estadisticasService.obtenerGananciasConductor(null, 'mensual', true);
+                    // 'semana' is simulated or uses 'mensual' as fallback if service doesn't specifically handle 'semanal' 
+                    const estaSemana = await estadisticasService.obtenerGananciasConductor(null, 'semanal', true).catch(() => ({ total: 0 }));
+
+                    return res.json({
+                        hoy: hoy.total || 0,
+                        estaSemana: estaSemana.total || 0,
+                        esteMes: esteMes.total || 0
+                    });
+                }
                 const data = await estadisticasService.obtenerGananciasConductor(id, periodo, true);
                 return res.json(data);
             }
 
             // Si es conductor, ver sus ganancias
             if (rol.includes('CONDUCTOR')) {
+                if (!periodo) {
+                    const hoy = await estadisticasService.obtenerGananciasConductor(id, 'diario', false);
+                    const esteMes = await estadisticasService.obtenerGananciasConductor(id, 'mensual', false);
+                    const estaSemana = await estadisticasService.obtenerGananciasConductor(id, 'semanal', false).catch(() => ({ total: 0 }));
+
+                    return res.json({
+                        hoy: hoy.total || 0,
+                        estaSemana: estaSemana.total || 0,
+                        esteMes: esteMes.total || 0
+                    });
+                }
                 const data = await estadisticasService.obtenerGananciasConductor(id, periodo, false);
                 return res.json(data);
             }
 
             // Si es viajero/pasajero, ver sus gastos
             if (rol.includes('VIAJERO') || rol.includes('PASAJERO')) {
+                if (!periodo) {
+                    const hoy = await estadisticasService.obtenerGastosPasajero(id, 'diario', false);
+                    const esteMes = await estadisticasService.obtenerGastosPasajero(id, 'mensual', false);
+                    const estaSemana = await estadisticasService.obtenerGastosPasajero(id, 'semanal', false).catch(() => ({ total: 0 }));
+
+                    return res.json({
+                        hoy: hoy.total || 0,
+                        estaSemana: estaSemana.total || 0,
+                        esteMes: esteMes.total || 0
+                    });
+                }
                 const data = await estadisticasService.obtenerGastosPasajero(id, periodo, false);
                 return res.json(data);
             }
