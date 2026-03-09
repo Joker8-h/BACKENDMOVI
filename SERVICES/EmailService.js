@@ -17,7 +17,7 @@ const EmailService = {
         try {
             const email = {
                 sender: {
-                    name: "MoviFlex OTP Verification",
+                    name: "MoviFlex verificacion",
                     email: process.env.EMAIL_USER || "no-reply@moviflex.com"
                 },
                 to: [{
