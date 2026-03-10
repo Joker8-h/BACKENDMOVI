@@ -1,7 +1,8 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const dns = require('dns').promises;
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 require('dotenv').config();
 
 const prisma = new PrismaClient();
@@ -542,6 +543,207 @@ const authService = {
 
         await emailService.enviarOtp(email, otp, "Usuario Nuevo");
         return { mensaje: "Código enviado a tu correo." };
+    },
+
+    async googleLogin(idToken) {
+        try {
+            // 1. Verificar el token de Google
+            const ticket = await client.verifyIdToken({
+                idToken,
+                audience: process.env.GOOGLE_CLIENT_ID
+            });
+            const payload = ticket.getPayload();
+            const { sub: googleId, email, name, picture } = payload;
+
+            // 2. Buscar usuario por googleId
+            let usuario = await prisma.usuarios.findUnique({
+                where: { googleId },
+                include: { rol: true }
+            });
+
+            // 3. Si no existe por googleId, buscar por email para vincular
+            if (!usuario) {
+                usuario = await prisma.usuarios.findUnique({
+                    where: { email },
+                    include: { rol: true }
+                });
+
+                if (usuario) {
+                    // Vincular cuenta existente con Google
+                    usuario = await prisma.usuarios.update({
+                        where: { idUsuarios: usuario.idUsuarios },
+                        data: { googleId, isEmailVerified: true },
+                        include: { rol: true }
+                    });
+                } else {
+                    // 4. Crear nuevo usuario si no existe
+                    let rolDb = await prisma.roles.findUnique({
+                        where: { nombre: "PASAJERO" }
+                    });
+
+                    if (!rolDb) {
+                        rolDb = await prisma.roles.create({
+                            data: { nombre: "PASAJERO" }
+                        });
+                    }
+
+                    // Generar un passwordHash vacío o aleatorio para usuarios de Google
+                    // No podrán loguearse con password a menos que usen "olvidé mi contraseña"
+                    const temporaryPassword = Math.random().toString(36).slice(-10);
+                    const salt = await bcrypt.genSalt(10);
+                    const passwordHash = await bcrypt.hash(temporaryPassword, salt);
+
+                    usuario = await prisma.usuarios.create({
+                        data: {
+                            email,
+                            nombre: name,
+                            googleId,
+                            fotoPerfil: picture,
+                            idRol: rolDb.idRol,
+                            estado: "ACTIVO",
+                            isEmailVerified: true,
+                            passwordHash
+                        },
+                        include: { rol: true }
+                    });
+
+                    // Notificación de bienvenida
+                    try {
+                        await notificacionesService.crearNotificacion({
+                            idUsuario: usuario.idUsuarios,
+                            titulo: "¡Bienvenido a MOVI!",
+                            mensaje: `Hola ${usuario.nombre}, gracias por registrarte con Google.`,
+                            tipo: "SISTEMA"
+                        });
+                    } catch (nErr) {
+                        console.error("Error notificación Google:", nErr.message);
+                    }
+                }
+            }
+
+            if (usuario.estado !== "ACTIVO") {
+                throw new Error("Usuario inactivo o suspendido.");
+            }
+
+            // 5. Generar JWT de MOVI
+            const token = jwt.sign(
+                {
+                    id: usuario.idUsuarios,
+                    email: usuario.email,
+                    nombre: usuario.nombre,
+                    idRol: usuario.idRol,
+                    rol: usuario.rol.nombre
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
+
+            const { passwordHash: _, ...usuarioSinPassword } = usuario;
+            return { usuario: usuarioSinPassword, token };
+        } catch (error) {
+            console.error("Error Google Auth:", error.message);
+            throw new Error("Error en la autenticación con Google");
+        }
+    },
+
+    async googleLogin(idToken) {
+        try {
+            // 1. Verificar el token de Google
+            const ticket = await client.verifyIdToken({
+                idToken,
+                audience: process.env.GOOGLE_CLIENT_ID
+            });
+            const payload = ticket.getPayload();
+            const { sub: googleId, email, name, picture } = payload;
+
+            // 2. Buscar usuario por googleId
+            let usuario = await prisma.usuarios.findUnique({
+                where: { googleId },
+                include: { rol: true }
+            });
+
+            // 3. Si no existe por googleId, buscar por email para vincular
+            if (!usuario) {
+                usuario = await prisma.usuarios.findUnique({
+                    where: { email },
+                    include: { rol: true }
+                });
+
+                if (usuario) {
+                    // Vincular cuenta existente con Google
+                    usuario = await prisma.usuarios.update({
+                        where: { idUsuarios: usuario.idUsuarios },
+                        data: { googleId, isEmailVerified: true },
+                        include: { rol: true }
+                    });
+                } else {
+                    // 4. Crear nuevo usuario si no existe
+                    let rolDb = await prisma.roles.findUnique({
+                        where: { nombre: "PASAJERO" }
+                    });
+
+                    if (!rolDb) {
+                        rolDb = await prisma.roles.create({
+                            data: { nombre: "PASAJERO" }
+                        });
+                    }
+
+                    // Generar un passwordHash vacío o aleatorio para usuarios de Google
+                    const temporaryPassword = Math.random().toString(36).slice(-10);
+                    const salt = await bcrypt.genSalt(10);
+                    const passwordHash = await bcrypt.hash(temporaryPassword, salt);
+
+                    usuario = await prisma.usuarios.create({
+                        data: {
+                            email,
+                            nombre: name,
+                            googleId,
+                            fotoPerfil: picture,
+                            idRol: rolDb.idRol,
+                            estado: "ACTIVO",
+                            isEmailVerified: true,
+                            passwordHash
+                        },
+                        include: { rol: true }
+                    });
+
+                    // Notificación de bienvenida
+                    try {
+                        await notificacionesService.crearNotificacion({
+                            idUsuario: usuario.idUsuarios,
+                            titulo: "¡Bienvenido a MOVI!",
+                            mensaje: `Hola ${usuario.nombre}, gracias por registrarte con Google.`,
+                            tipo: "SISTEMA"
+                        });
+                    } catch (nErr) {
+                        console.error("Error notificación Google:", nErr.message);
+                    }
+                }
+            }
+
+            if (usuario.estado !== "ACTIVO") {
+                throw new Error("Usuario inactivo o suspendido.");
+            }
+
+            // 5. Generar JWT de MOVI
+            const token = jwt.sign(
+                {
+                    id: usuario.idUsuarios,
+                    email: usuario.email,
+                    nombre: usuario.nombre,
+                    idRol: usuario.idRol,
+                    rol: usuario.rol.nombre
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
+
+            const { passwordHash: _, ...usuarioSinPassword } = usuario;
+            return { usuario: usuarioSinPassword, token };
+        } catch (error) {
+            console.error("Error Google Auth:", error.message);
+            throw new Error("Error en la autenticación con Google");
+        }
     },
 
     async validarOtpPreRegistro(email, otp) {

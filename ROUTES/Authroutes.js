@@ -17,6 +17,7 @@ router.post('/registro', authController.register);
 router.post('/login', loginLimiter, authController.login);
 router.post('/request-pre-otp', authController.requestPreRegOtp);
 router.post('/verify-pre-otp', authController.verifyPreRegOtp);
+router.post('/google', authController.googleAuth);
 
 const authorize = require('../MIDDLEWARE/role.middleware.js');
 

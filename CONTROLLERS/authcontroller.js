@@ -252,6 +252,19 @@ const authController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
+    },
+
+    async googleAuth(req, res) {
+        try {
+            const { idToken } = req.body;
+            if (!idToken) {
+                return res.status(400).json({ error: "idToken de Google es requerido" });
+            }
+            const resultado = await authService.googleLogin(idToken);
+            res.json(resultado);
+        } catch (error) {
+            res.status(401).json({ error: error.message });
+        }
     }
 }
 module.exports = authController;
