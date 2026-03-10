@@ -233,6 +233,7 @@ model Viajes {
   calificaciones Calificaciones[]
   conversaciones Conversaciones[]
   tramos         ViajeTramos[]
+  pagos          Pagos[]
 }
 
 model UsuarioViaje {
@@ -333,15 +334,21 @@ model Mensajes {
 }
 
 model Pagos {
-  idPago    Int @id @default(autoincrement())
-  idUsuario Int
-
-  monto     Decimal?   @db.Decimal(10, 2)
-  tipoPago  TipoPago
-  estado    EstadoPago
-  fechaPago DateTime?
+  idPago                Int        @id @default(autoincrement())
+  idViaje               Int
+  idUsuario             Int
+  tipoPago              TipoPago
+  monto                 Decimal?   @db.Decimal(10, 2)
+  estado                EstadoPago @default(PENDIENTE)
+  confirmacionPasajero  Boolean    @default(false)
+  confirmacionConductor Boolean    @default(false)
+  fechaPago             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
 
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
+  viaje   Viajes   @relation(fields: [idViaje], references: [idViajes])
+
+  @@unique([idViaje, idUsuario])
 }
 
 model PlanesConductor {

@@ -18,7 +18,28 @@ const pagosController = {
             const pagos = await pagosService.getByUser(idUsuario);
             res.json(pagos);
         } catch (error) {
-            res.json({ error: error.message });
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async getByViaje(req, res) {
+        try {
+            const { idViaje } = req.params;
+            const pagos = await pagosService.getByViaje(idViaje);
+            res.json(pagos);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async getByViajeAndUser(req, res) {
+        try {
+            const { idViaje, idUsuario } = req.params;
+            const pago = await pagosService.getByViajeAndUser(idViaje, idUsuario);
+            if (!pago) return res.status(404).json({ error: "Pago no encontrado para este viaje y usuario" });
+            res.json(pago);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     },
 
@@ -27,6 +48,22 @@ const pagosController = {
             const { id } = req.params;
             const pago = await pagosService.getById(id);
             if (!pago) return res.status(404).json({ error: "Pago no encontrado" });
+            res.json(pago);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async updateConfirmacion(req, res) {
+        try {
+            const { id } = req.params;
+            const { confirmacionPasajero, confirmacionConductor } = req.body;
+
+            const updateData = {};
+            if (confirmacionPasajero !== undefined) updateData.confirmacionPasajero = confirmacionPasajero;
+            if (confirmacionConductor !== undefined) updateData.confirmacionConductor = confirmacionConductor;
+
+            const pago = await pagosService.updateConfirmacion(id, updateData);
             res.json(pago);
         } catch (error) {
             res.status(500).json({ error: error.message });
