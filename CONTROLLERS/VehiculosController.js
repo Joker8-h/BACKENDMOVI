@@ -7,16 +7,41 @@ const prisma = new PrismaClient();
 const vehiculosController = {
     async create(req, res) {
         try {
-            const { marca, modelo, placa, capacidad, fotoVehiculo } = req.body;
+            const { marca, modelo, placa, capacidad, fotoPlaca, fotoAuto1, fotoAuto2, fotoAuto3 } = req.body;
 
             const idUsuario = req.user.id;
 
-            let fotoVehiculoUrl = null;
-            if (fotoVehiculo) {
+            let fotoPlacaUrl = null;
+            let fotoAuto1Url = null;
+            let fotoAuto2Url = null;
+            let fotoAuto3Url = null;
+
+            if (fotoPlaca) {
                 try {
-                    fotoVehiculoUrl = await cloudinaryService.subirImagen(fotoVehiculo, "vehiculos");
+                    fotoPlacaUrl = await cloudinaryService.subirImagen(fotoPlaca, "vehiculos");
                 } catch (err) {
-                    console.error("[VEHICULOS] Error al subir foto a Cloudinary:", err.message);
+                    console.error("[VEHICULOS] Error al subir foto de placa a Cloudinary:", err.message);
+                }
+            }
+            if (fotoAuto1) {
+                try {
+                    fotoAuto1Url = await cloudinaryService.subirImagen(fotoAuto1, "vehiculos");
+                } catch (err) {
+                    console.error("[VEHICULOS] Error al subir foto auto 1 a Cloudinary:", err.message);
+                }
+            }
+            if (fotoAuto2) {
+                try {
+                    fotoAuto2Url = await cloudinaryService.subirImagen(fotoAuto2, "vehiculos");
+                } catch (err) {
+                    console.error("[VEHICULOS] Error al subir foto auto 2 a Cloudinary:", err.message);
+                }
+            }
+            if (fotoAuto3) {
+                try {
+                    fotoAuto3Url = await cloudinaryService.subirImagen(fotoAuto3, "vehiculos");
+                } catch (err) {
+                    console.error("[VEHICULOS] Error al subir foto auto 3 a Cloudinary:", err.message);
                 }
             }
 
@@ -26,7 +51,10 @@ const vehiculosController = {
                 modelo,
                 placa,
                 capacidad: parseInt(capacidad),
-                fotoVehiculo: fotoVehiculoUrl
+                fotoPlaca: fotoPlacaUrl,
+                fotoAuto1: fotoAuto1Url,
+                fotoAuto2: fotoAuto2Url,
+                fotoAuto3: fotoAuto3Url
             });
             res.json(nuevoVehiculo);
         } catch (error) {
@@ -105,13 +133,13 @@ const vehiculosController = {
 
     async extraerPlaca(req, res) {
         try {
-            const { fotoVehiculo } = req.body;
-            if (!fotoVehiculo) return res.status(400).json({ error: "Falta la foto del vehículo" });
+            const { fotoPlaca } = req.body;
+            if (!fotoPlaca) return res.status(400).json({ error: "Falta la foto de la placa" });
 
             // 1. Subir a Cloudinary temporalmente o usar una carpeta específica
-            console.log("[VEHICULOS] Subiendo foto a Cloudinary...");
-            const fotoUrl = await cloudinaryService.subirImagen(fotoVehiculo, "temp_plates");
-            console.log("[VEHICULOS] Foto subida exitosamente:", fotoUrl);
+            console.log("[VEHICULOS] Subiendo foto de placa a Cloudinary...");
+            const fotoUrl = await cloudinaryService.subirImagen(fotoPlaca, "temp_plates");
+            console.log("[VEHICULOS] Foto de placa subida exitosamente:", fotoUrl);
 
             // 2. Analizar con IA
             console.log("[VEHICULOS] Llamando a aiService.verificarPlaca...");
@@ -137,10 +165,20 @@ const vehiculosController = {
     async solicitarCambio(req, res) {
         try {
             const { id } = req.params;
-            const { marca, modelo, capacidad } = req.body;
+            const { marca, modelo, capacidad, fotoPlaca, fotoAuto1, fotoAuto2, fotoAuto3 } = req.body;
+
+            let fp = null, fa1 = null, fa2 = null, fa3 = null;
+            if (fotoPlaca) fp = await cloudinaryService.subirImagen(fotoPlaca, "vehicle_changes");
+            if (fotoAuto1) fa1 = await cloudinaryService.subirImagen(fotoAuto1, "vehicle_changes");
+            if (fotoAuto2) fa2 = await cloudinaryService.subirImagen(fotoAuto2, "vehicle_changes");
+            if (fotoAuto3) fa3 = await cloudinaryService.subirImagen(fotoAuto3, "vehicle_changes");
 
             const solicitud = await vehiculosService.crearSolicitudCambio(id, {
-                marca, modelo, capacidad
+                marca, modelo, capacidad,
+                fotoPlacaNuevaUrl: fp,
+                fotoAuto1NuevaUrl: fa1,
+                fotoAuto2NuevaUrl: fa2,
+                fotoAuto3NuevaUrl: fa3
             });
 
             // Notificar a los administradores

@@ -163,8 +163,12 @@ model Vehiculos {
   capacidad Int
   estado    EstadoVehiculo @default(ACTIVO)
 
-  // Nuevos campos para validación de placa
-  fotoVehiculo  String? @db.VarChar(500)
+  // Foto para validación de la placa (IA)
+  fotoPlaca     String? @db.VarChar(500)
+  // Fotos generales del vehículo
+  fotoAuto1     String? @db.VarChar(500)
+  fotoAuto2     String? @db.VarChar(500)
+  fotoAuto3     String? @db.VarChar(500)
   placaValidada Boolean @default(false)
 
   usuario Usuarios @relation(fields: [idUsuario], references: [idUsuarios])
@@ -436,6 +440,9 @@ model SolicitudCambioVehiculo {
   placaNueva        String? @db.VarChar(20)
   capacidadNueva    Int?
   fotoPlacaNuevaUrl String? @db.VarChar(255)
+  fotoAuto1NuevaUrl String? @db.VarChar(255)
+  fotoAuto2NuevaUrl String? @db.VarChar(255)
+  fotoAuto3NuevaUrl String? @db.VarChar(255)
 
   estado         EstadoSolicitudCambio @default(PENDIENTE)
   fechaSolicitud DateTime              @default(now())

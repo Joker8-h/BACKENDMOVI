@@ -14,10 +14,10 @@ const vehiculosService = {
         }
 
         // Validación automática de placa vía IA
-        if (data.fotoVehiculo) {
+        if (data.fotoPlaca) {
             try {
                 // Usamos el servicio de IA para verificar la placa
-                const validacion = await aiService.verificarPlaca(data.fotoVehiculo);
+                const validacion = await aiService.verificarPlaca(data.fotoPlaca);
 
                 if (validacion.is_detected && validacion.plate_text) {
                     const placaLimpiaIngresada = data.placa.replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -137,6 +137,10 @@ const vehiculosService = {
                 marcaNueva: data.marca,
                 modeloNuevo: data.modelo,
                 capacidadNueva: data.capacidad ? parseInt(data.capacidad) : undefined,
+                fotoPlacaNuevaUrl: data.fotoPlacaNuevaUrl,
+                fotoAuto1NuevaUrl: data.fotoAuto1NuevaUrl,
+                fotoAuto2NuevaUrl: data.fotoAuto2NuevaUrl,
+                fotoAuto3NuevaUrl: data.fotoAuto3NuevaUrl,
                 estado: 'PENDIENTE'
             }
         });
@@ -174,7 +178,11 @@ const vehiculosService = {
                 data: {
                     marca: solicitud.marcaNueva || undefined,
                     modelo: solicitud.modeloNuevo || undefined,
-                    capacidad: solicitud.capacidadNueva || undefined
+                    capacidad: solicitud.capacidadNueva || undefined,
+                    fotoPlaca: solicitud.fotoPlacaNuevaUrl || undefined,
+                    fotoAuto1: solicitud.fotoAuto1NuevaUrl || undefined,
+                    fotoAuto2: solicitud.fotoAuto2NuevaUrl || undefined,
+                    fotoAuto3: solicitud.fotoAuto3NuevaUrl || undefined
                 }
             });
 
