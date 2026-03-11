@@ -32,6 +32,8 @@ enum TipoMensaje {
 enum TipoPago {
   VIAJE
   PLAN_CONDUCTOR
+  EFECTIVO
+  TRANSFERENCIA
 }
 
 enum EstadoPago {
