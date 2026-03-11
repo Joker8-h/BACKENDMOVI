@@ -767,6 +767,62 @@ const authService = {
         });
 
         return { mensaje: "Correo verificado correctamente.", verificado: true };
+    },
+
+    async solicitarRecuperacionPassword(email) {
+        const usuario = await prisma.usuarios.findUnique({ where: { email } });
+        if (!usuario) {
+            // Por seguridad, no decimos si el email existe o no
+            return { mensaje: "Si el correo está registrado, recibirás un enlace de recuperación." };
+        }
+
+        const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+        await prisma.usuarios.update({
+            where: { email },
+            data: {
+                resetToken: token,
+                resetTokenExpiry: expiry
+            }
+        });
+
+        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${token}`;
+        await emailService.enviarLinkRecuperacion(email, usuario.nombre, resetLink);
+
+        return { mensaje: "Si el correo está registrado, recibirás un enlace de recuperación." };
+    },
+
+    async restablecerPassword(token, nuevaPassword) {
+        const usuario = await prisma.usuarios.findFirst({
+            where: {
+                resetToken: token,
+                resetTokenExpiry: { gt: new Date() }
+            }
+        });
+
+        if (!usuario) {
+            throw new Error("El enlace es inválido o ha expirado.");
+        }
+
+        const validacion = validarPasswordSegura(nuevaPassword);
+        if (!validacion.isValid) {
+            throw new Error(validacion.errors.join(" "));
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(nuevaPassword, salt);
+
+        await prisma.usuarios.update({
+            where: { idUsuarios: usuario.idUsuarios },
+            data: {
+                passwordHash,
+                resetToken: null,
+                resetTokenExpiry: null
+            }
+        });
+
+        return { mensaje: "Contraseña actualizada correctamente." };
     }
 };
 

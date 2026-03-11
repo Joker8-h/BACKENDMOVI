@@ -182,6 +182,49 @@ const EmailService = {
             console.error(`[EmailService] Error enviando recordatorio de pago:`, error.message);
             return false;
         }
+    },
+
+    /**
+     * Envía un enlace para recuperación de contraseña
+     * @param {string} emailDestino - Correo del usuario
+     * @param {string} nombre - Nombre del usuario
+     * @param {string} link - URL de recuperación
+     */
+    async enviarLinkRecuperacion(emailDestino, nombre, link) {
+        try {
+            const email = {
+                sender: {
+                    name: "MoviFlex Soporte",
+                    email: process.env.EMAIL_USER || "no-reply@moviflex.com"
+                },
+                to: [{
+                    email: emailDestino
+                }],
+                subject: "Recuperación de contraseña - MoviFlex",
+                htmlContent: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <h2 style="color: #4acfbd; text-align: center;">Recuperar Contraseña</h2>
+                        <p>Hola <strong>${nombre}</strong>,</p>
+                        <p>Has solicitado restablecer tu contraseña en MoviFlex. Haz clic en el siguiente botón para continuar:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${link}" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Restablecer mi contraseña</a>
+                        </div>
+                        <p>Este enlace expirará en 1 hora. Si no solicitaste este cambio, puedes ignorar este correo.</p>
+                        <p>Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:</p>
+                        <p style="word-break: break-all; color: #8899a6; font-size: 13px;">${link}</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #8899a6; text-align: center;">MoviFlex Team</p>
+                    </div>
+                `
+            };
+
+            const result = await apiInstance.sendTransacEmail(email);
+            console.log(`[EmailService] Link de recuperación enviado a ${emailDestino}. ID: ${result.messageId}`);
+            return true;
+        } catch (error) {
+            console.error(`[EmailService] Error enviando link de recuperación:`, error.message);
+            throw new Error("No se pudo enviar el correo de recuperación.");
+        }
     }
 };
 

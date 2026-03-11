@@ -154,6 +154,10 @@ model Usuarios {
   otpExpiry       DateTime?
   isEmailVerified Boolean   @default(false)
   googleId        String?   @unique @db.VarChar(255)
+  
+  // Campos para recuperación de contraseña
+  resetToken       String?   @db.VarChar(255)
+  resetTokenExpiry DateTime?
 
   @@map("Usuarios")
 }

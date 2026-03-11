@@ -265,6 +265,32 @@ const authController = {
         } catch (error) {
             res.status(401).json({ error: error.message });
         }
+    },
+
+    async forgotPassword(req, res) {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).json({ error: "El email es requerido" });
+            }
+            const resultado = await authService.solicitarRecuperacionPassword(email);
+            res.json(resultado);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    async resetPassword(req, res) {
+        try {
+            const { token, password } = req.body;
+            if (!token || !password) {
+                return res.status(400).json({ error: "Token y contraseña son requeridos" });
+            }
+            const resultado = await authService.restablecerPassword(token, password);
+            res.json(resultado);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
 }
 module.exports = authController;
