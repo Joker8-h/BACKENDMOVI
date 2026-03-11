@@ -68,6 +68,26 @@ const pagosController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    async confirmarPasajero(req, res) {
+        try {
+            const { id } = req.params;
+            const pago = await pagosService.confirmarPasajero(id);
+            res.json(pago);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async confirmarConductor(req, res) {
+        try {
+            const { id } = req.params;
+            const pago = await pagosService.confirmarConductor(id);
+            res.json(pago);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

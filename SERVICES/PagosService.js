@@ -75,6 +75,36 @@ const pagosService = {
             where: { idPago: parseInt(idPago) },
             data: confirmacion
         });
+    },
+
+    async confirmarPasajero(idPago) {
+        const pago = await prisma.pagos.findUnique({ where: { idPago: parseInt(idPago) } });
+        if (!pago) throw new Error("Pago no encontrado");
+
+        const nuevoEstado = pago.confirmacionConductor ? 'COMPLETADO' : 'CONFIRMADO_PASAJERO';
+
+        return await prisma.pagos.update({
+            where: { idPago: parseInt(idPago) },
+            data: {
+                confirmacionPasajero: true,
+                estado: nuevoEstado
+            }
+        });
+    },
+
+    async confirmarConductor(idPago) {
+        const pago = await prisma.pagos.findUnique({ where: { idPago: parseInt(idPago) } });
+        if (!pago) throw new Error("Pago no encontrado");
+
+        const nuevoEstado = pago.confirmacionPasajero ? 'COMPLETADO' : 'CONFIRMADO_CONDUCTOR';
+
+        return await prisma.pagos.update({
+            where: { idPago: parseInt(idPago) },
+            data: {
+                confirmacionConductor: true,
+                estado: nuevoEstado
+            }
+        });
     }
 };
 
