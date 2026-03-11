@@ -318,6 +318,7 @@ const authService = {
             select: {
                 idUsuarios: true,
                 nombre: true,
+                fotoPerfil: true,
                 email: true,
                 telefono: true,
                 estado: true,
@@ -344,6 +345,7 @@ const authService = {
             select: {
                 idUsuarios: true,
                 nombre: true,
+                fotoPerfil: true,
                 email: true,
                 telefono: true,
                 estado: true,
