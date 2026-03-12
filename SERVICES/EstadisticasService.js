@@ -41,10 +41,16 @@ class EstadisticasService {
             }
         });
 
-        const totalGanancias = viajesConductor.reduce((acc, curr) => acc + Number(curr.precioFinal || 0), 0);
+        const factor = isGlobal ? 1 : 0.9;
+        const viajesCalculados = viajesConductor.map(v => ({
+            ...v,
+            gananciaNeta: Number(v.precioFinal || 0) * factor
+        }));
+
+        const totalGanancias = viajesCalculados.reduce((acc, curr) => acc + curr.gananciaNeta, 0);
 
         // Agrupar por subperiodo para las gráficas
-        const historial = this.agruparDatosPorPeriodo(viajesConductor, periodo, 'precioFinal');
+        const historial = this.agruparDatosPorPeriodo(viajesCalculados, periodo, 'gananciaNeta');
 
         return {
             total: totalGanancias,
@@ -115,6 +121,63 @@ class EstadisticasService {
 
         const total = pagos.reduce((acc, curr) => acc + Number(curr.monto || 0), 0);
         const historial = this.agruparDatosPorPeriodo(pagos, periodo, 'monto');
+
+        return {
+            total,
+            periodo,
+            historial
+        };
+    }
+
+    /**
+     * Obtener ingresos globales de la plataforma a partir de las comisiones aprobadas de los conductores
+     */
+    async obtenerIngresosPlataforma(periodo = 'mensual') {
+        const ahora = new Date();
+        let fechaInicio;
+
+        if (periodo === 'diario') {
+            fechaInicio = new Date(ahora.setHours(0, 0, 0, 0));
+        } else if (periodo === 'mensual') {
+            fechaInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+        } else if (periodo === 'anual') {
+            fechaInicio = new Date(ahora.getFullYear(), 0, 1);
+        }
+
+        const reportes = await prisma.reportesPago.findMany({
+            where: {
+                estado: 'APROBADO',
+                fechaRevision: { gte: fechaInicio }
+            },
+            select: {
+                montoComision: true,
+                fechaRevision: true
+            }
+        });
+
+        const total = reportes.reduce((acc, curr) => acc + Number(curr.montoComision || 0), 0);
+        
+        // Agrupar por periodo
+        const grupos = {};
+        reportes.forEach(item => {
+            let key;
+            const fecha = new Date(item.fechaRevision || new Date());
+            if (periodo === 'diario') {
+                key = `${fecha.getHours()}:00`;
+            } else if (periodo === 'mensual') {
+                key = `Día ${fecha.getDate()}`;
+            } else if (periodo === 'anual') {
+                const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                key = meses[fecha.getMonth()];
+            }
+
+            grupos[key] = (grupos[key] || 0) + Number(item.montoComision || 0);
+        });
+
+        const historial = Object.entries(grupos).map(([name, value]) => ({
+            name,
+            value: Number(value.toFixed(2))
+        }));
 
         return {
             total,

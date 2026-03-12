@@ -74,7 +74,7 @@ class EstadisticasController {
                 return res.status(403).json({ message: "No tienes permiso para ver ingresos globales" });
             }
 
-            const data = await estadisticasService.obtenerGastosPasajero(null, periodo, true);
+            const data = await estadisticasService.obtenerIngresosPlataforma(periodo);
             res.json(data);
         } catch (error) {
             console.error("Error en getIngresosGlobales:", error);
