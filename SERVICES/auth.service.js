@@ -787,7 +787,7 @@ const authService = {
             }
         });
 
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${token}`;
+        const resetLink = `${process.env.FRONTEND_URL || 'https://moviflexconreact-production.up.railway.app'}/reset-password/${token}`;
         await emailService.enviarLinkRecuperacion(email, usuario.nombre, resetLink);
 
         return { mensaje: "Si el correo está registrado, recibirás un enlace de recuperación." };

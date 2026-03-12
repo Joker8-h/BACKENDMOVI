@@ -26,6 +26,9 @@ const EmailService = {
                 subject: "Verifica tu cuenta en MoviFlex",
                 htmlContent: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="https://res.cloudinary.com/davda0bon/image/upload/v1741731600/TODO_MOVI_TRANSPARENTE.png" alt="MoviFlex Logo" style="width: 180px; max-width: 100%;">
+                        </div>
                         <h2 style="color: #4acfbd; text-align: center;">Bienvenido a MoviFlex</h2>
                         <p>Hola <strong>${nombre}</strong>,</p>
                         <p>Gracias por registrarte en MoviFlex. Para completar tu registro y verificar tu correo electrónico, utiliza el siguiente código de verificación:</p>
@@ -68,11 +71,14 @@ const EmailService = {
                 subject: "¡Tu cuenta en MoviFlex ha sido activada!",
                 htmlContent: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="https://res.cloudinary.com/davda0bon/image/upload/v1741731600/TODO_MOVI_TRANSPARENTE.png" alt="MoviFlex Logo" style="width: 180px; max-width: 100%;">
+                        </div>
                         <h2 style="color: #4acfbd; text-align: center;">¡Buenas noticias, ${nombre}!</h2>
                         <p>Nos complace informarte que tu cuenta en <strong>MoviFlex</strong> ha sido activada satisfactoriamente por nuestro equipo administrativo.</p>
                         <p>A partir de este momento, ya puedes iniciar sesión en la plataforma y comenzar a disfrutar de todos los servicios que tenemos para ti.</p>
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="https://moviflex.com/login" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Iniciar Sesión ahora</a>
+                            <a href="${process.env.FRONTEND_URL || 'https://moviflexconreact-production.up.railway.app'}/login" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Iniciar Sesión ahora</a>
                         </div>
                         <p>¡Gracias por confiar en nosotros!</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
@@ -112,6 +118,9 @@ const EmailService = {
                 subject: `Nuevo Reporte de Pago - ${nombreConductor}`,
                 htmlContent: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="https://res.cloudinary.com/davda0bon/image/upload/v1741731600/TODO_MOVI_TRANSPARENTE.png" alt="MoviFlex Logo" style="width: 180px; max-width: 100%;">
+                        </div>
                         <h2 style="color: #4acfbd; text-align: center;">Nuevo Reporte de Pago</h2>
                         <p>Se ha recibido un nuevo comprobante de pago en la plataforma <strong>MoviFlex</strong>.</p>
                         <div style="background-color: #f8fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -121,7 +130,7 @@ const EmailService = {
                         </div>
                         <p>Ingresa al panel de administración para revisar y aprobar o rechazar este reporte.</p>
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="https://moviflex.com/admin/reportes-pago" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver Reportes de Pago</a>
+                            <a href="${process.env.FRONTEND_URL || 'https://moviflexconreact-production.up.railway.app'}/admin/reportes-pago" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver Reportes de Pago</a>
                         </div>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                         <p style="font-size: 12px; color: #8899a6; text-align: center;">MoviFlex Team</p>
@@ -158,6 +167,9 @@ const EmailService = {
                 subject: `⚠️ Recordatorio de pago - Te quedan ${diasRestantes} días`,
                 htmlContent: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="https://res.cloudinary.com/davda0bon/image/upload/v1741731600/TODO_MOVI_TRANSPARENTE.png" alt="MoviFlex Logo" style="width: 180px; max-width: 100%;">
+                        </div>
                         <h2 style="color: #f39c12; text-align: center;">⚠️ Recordatorio de Pago</h2>
                         <p>Hola <strong>${nombre}</strong>,</p>
                         <p>Te recordamos que tienes una comisión pendiente por pagar en <strong>MoviFlex</strong>.</p>
@@ -167,7 +179,7 @@ const EmailService = {
                         </div>
                         <p>⚠️ <strong>Importante:</strong> Si no envías el comprobante de pago antes de que termine el mes, tu cuenta será <strong>suspendida automáticamente</strong> y no podrás seguir ofreciendo viajes.</p>
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="https://moviflex.com/driver-home" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Enviar Comprobante Ahora</a>
+                            <a href="${process.env.FRONTEND_URL || 'https://moviflexconreact-production.up.railway.app'}/driver-home" style="background-color: #4acfbd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Enviar Comprobante Ahora</a>
                         </div>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                         <p style="font-size: 12px; color: #8899a6; text-align: center;">MoviFlex Team</p>
@@ -203,6 +215,9 @@ const EmailService = {
                 subject: "Recuperación de contraseña - MoviFlex",
                 htmlContent: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="https://res.cloudinary.com/davda0bon/image/upload/v1741731600/TODO_MOVI_TRANSPARENTE.png" alt="MoviFlex Logo" style="width: 180px; max-width: 100%;">
+                        </div>
                         <h2 style="color: #4acfbd; text-align: center;">Recuperar Contraseña</h2>
                         <p>Hola <strong>${nombre}</strong>,</p>
                         <p>Has solicitado restablecer tu contraseña en MoviFlex. Haz clic en el siguiente botón para continuar:</p>
