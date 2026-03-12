@@ -95,14 +95,16 @@ const pagosService = {
     async confirmarConductor(idPago) {
         const pago = await prisma.pagos.findUnique({ where: { idPago: parseInt(idPago) } });
         if (!pago) throw new Error("Pago no encontrado");
-
-        const nuevoEstado = pago.confirmacionPasajero ? 'COMPLETADO' : 'CONFIRMADO_CONDUCTOR';
-
+        if (!pago.confirmacionPasajero) {
+            const error = new Error("El pasajero aún no ha confirmado el pago");
+            error.code = 400;
+            throw error;
+        }
         return await prisma.pagos.update({
             where: { idPago: parseInt(idPago) },
             data: {
                 confirmacionConductor: true,
-                estado: nuevoEstado
+                estado: 'COMPLETADO'
             }
         });
     }

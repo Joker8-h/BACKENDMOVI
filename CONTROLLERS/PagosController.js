@@ -86,7 +86,8 @@ const pagosController = {
             const pago = await pagosService.confirmarConductor(id);
             res.json(pago);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            const statusCode = error.code === 400 ? 400 : 500;
+            res.status(statusCode).json({ error: error.message });
         }
     }
 };
