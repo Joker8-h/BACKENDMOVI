@@ -18,13 +18,16 @@ class EstadisticasService {
             fechaInicio = new Date(ahora.getFullYear(), 0, 1);
         }
 
-        // Definir filtro
+        // Buscamos Pagos reales que los pasajeros hicieron para viajes de este conductor
         let whereClause = {
-            estado: 'COMPLETADO',
-            creadoEn: { gte: fechaInicio }
+            estado: { in: ['PAGADO', 'CONFIRMADO_CONDUCTOR', 'CONFIRMADO_PASAJERO', 'COMPLETADO'] }
         };
 
-        if (!isGlobal) {
+        if (fechaInicio) {
+            whereClause.fechaPago = { gte: fechaInicio };
+        }
+
+        if (!isGlobal && idUsuario) {
             whereClause.viaje = {
                 vehiculo: {
                     idUsuario: idUsuario
@@ -32,25 +35,26 @@ class EstadisticasService {
             };
         }
 
-        // Obtener viajes completados
-        const viajesConductor = await prisma.usuarioViaje.findMany({
+        const pagosRegistrados = await prisma.pagos.findMany({
             where: whereClause,
             select: {
-                precioFinal: true,
-                creadoEn: true
+                monto: true,
+                fechaPago: true
             }
         });
 
         const factor = isGlobal ? 1 : 0.9;
-        const viajesCalculados = viajesConductor.map(v => ({
-            ...v,
-            gananciaNeta: Number(v.precioFinal || 0) * factor
+        const pagosCalculados = pagosRegistrados.map(p => ({
+            ...p,
+            gananciaNeta: Number(p.monto || 0) * factor,
+            // Guardamos la fecha original para que la agrupación funcione correctamente
+            fechaAgrupacion: p.fechaPago
         }));
 
-        const totalGanancias = viajesCalculados.reduce((acc, curr) => acc + curr.gananciaNeta, 0);
+        const totalGanancias = pagosCalculados.reduce((acc, curr) => acc + curr.gananciaNeta, 0);
 
-        // Agrupar por subperiodo para las gráficas
-        const historial = this.agruparDatosPorPeriodo(viajesCalculados, periodo, 'gananciaNeta');
+        // Agrupar por subperiodo para las gráficas usando la nueva estructura
+        const historial = this.agruparDatosPorPeriodo(pagosCalculados, periodo, 'gananciaNeta', 'fechaAgrupacion');
 
         return {
             total: totalGanancias,
