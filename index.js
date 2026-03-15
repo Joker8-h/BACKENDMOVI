@@ -79,9 +79,14 @@ const socketService = require('./SERVICES/SocketService');
 socketService.init(server);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
-// Inicializar tareas automáticas (cron jobs)
-const { initCronJobs } = require('./SERVICES/CronJobs');
-initCronJobs();
+
+if (process.env.NODE_ENV !== 'test') {
+    server.listen(PORT, () => {
+        console.log(`Servidor corriendo en el puerto ${PORT}`);
+    });
+    // Inicializar tareas automáticas (cron jobs)
+    const { initCronJobs } = require('./SERVICES/CronJobs');
+    initCronJobs();
+}
+
+module.exports = { app, server };

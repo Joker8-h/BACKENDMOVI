@@ -1,7 +1,7 @@
 const iaRutasLogService = require("../SERVICES/IaRutasLogService");
 
 const iaRutasLogController = {
-    // Crear un nuevo log
+    
     async create(req, res) {
         try {
             const log = await iaRutasLogService.createLog(req.body);

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --forceExit",
     "seed": "node prisma/seed.js"
   },
   "prisma": {
@@ -30,11 +30,13 @@
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
     "sib-api-v3-sdk": "^8.5.0",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "jest": "^30.3.0",
     "nodemon": "^3.1.11",
-    "prisma": "^6.19.0"
+    "prisma": "^6.19.0",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2"
   }
 }
