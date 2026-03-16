@@ -76,6 +76,58 @@ class SocketService {
                 }, "Usuario Desconectado", `${userInfo?.nombre || 'Usuario'} ha salido del sistema.`);
             });
 
+            // ── Lógica de Viajes en Tiempo Real ──────────────────────────────────
+
+            // Evento para unirse a un viaje específico (sala)
+            socket.on("join_trip", (data) => {
+                const { idViaje } = data;
+                if (!idViaje) return;
+                
+                const roomName = `trip_${idViaje}`;
+                socket.join(roomName);
+                console.log(`Usuario ${nombre} se unió al viaje: ${roomName}`);
+                
+                // Notificar a los demás en la sala (opcional)
+                socket.to(roomName).emit("user_joined_trip", {
+                    userId: id,
+                    nombre: nombre,
+                    rol: rol
+                });
+            });
+
+            // Evento para abandonar la sala del viaje
+            socket.on("leave_trip", (data) => {
+                const { idViaje } = data;
+                if (idViaje) {
+                    socket.leave(`trip_${idViaje}`);
+                    console.log(`Usuario ${nombre} salió del viaje: trip_${idViaje}`);
+                }
+            });
+
+            // Evento para que el conductor envíe su ubicación
+            socket.on("driver_location_update", (data) => {
+                const { idViaje, lat, lng, rumbo } = data;
+                
+                if (!idViaje || !lat || !lng) return;
+
+                // Solo permitir si el usuario es conductor (seguridad básica)
+                // Nota: En una app real, verificaríamos que sea EL conductor asignado a ese viaje
+                if (rol !== "CONDUCTOR") return;
+
+                const roomName = `trip_${idViaje}`;
+                
+                // Reenviar ubicación a todos los pasajeros en la sala
+                this.io.to(roomName).emit("location_updated", {
+                    idViaje,
+                    lat,
+                    lng,
+                    rumbo,
+                    timestamp: new Date()
+                });
+                
+                console.log(`Ubicación enviada viaje ${idViaje}: ${lat}, ${lng}`);
+            });
+
         });
 
         console.log("Socket.io inicializado correctamente");
