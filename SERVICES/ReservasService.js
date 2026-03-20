@@ -85,10 +85,17 @@ const reservasService = {
             throw new Error("Debe indicar un punto de bajada (parada o coordenadas).");
         }
 
-        // 4. Calcular Distancia y Precio (integrando rutaspython si es posible)
-        let distanciaRecorrida = 0;
-        let comisionPlataforma = 0;
-        let precioFinal = 0;
+        // 4. Calcular precios (Lógica de tramos)
+        let precioFinal        = 0;
+        let comisionPlataforma  = 0;
+        let distanciaRecorrida   = 0;
+
+        // Helper de redondeo al múltiplo de 100 más cercano (Mínimo 500)
+        const redondearCop = (monto) => {
+            if (!monto || monto <= 0) return 0;
+            const res = Math.ceil(monto / 100) * 100;
+            return Math.max(res, 500);
+        };
 
         if (data.idParadaSubida && data.idParadaBajada) {
             // Si ambas son paradas de la ruta, intentamos usar el microservicio rutaspython
@@ -147,10 +154,10 @@ const reservasService = {
                             );
 
                             const baseSegmento = pasajeroSegmento.fare_cop;
-                            // Aplicamos la misma lógica de comisión (10% sobre el valor base del tramo)
-                            comisionPlataforma = baseSegmento * 0.1;
-                            precioFinal = baseSegmento + comisionPlataforma;
-                        }
+                             // Aplicamos la misma lógica de comisión (10% sobre el valor base del tramo)
+                             comisionPlataforma = redondearCop(baseSegmento * 0.1);
+                             precioFinal = redondearCop(baseSegmento + comisionPlataforma);
+                         }
                     }
                 }
             } catch (error) {
@@ -182,10 +189,10 @@ const reservasService = {
             const tarifaPorKm = 500;
             const subTotal = tarifaBase + (distanciaRecorrida * tarifaPorKm);
 
-            // Comisión plataforma: 10% ADICIONAL al precio del viaje (El pasajero asume el costo)
-            comisionPlataforma = subTotal * 0.10;
-            precioFinal = subTotal + comisionPlataforma;
-        }
+             // Comisión plataforma: 10% ADICIONAL al precio del viaje (El pasajero asume el costo)
+             comisionPlataforma = redondearCop(subTotal * 0.10);
+             precioFinal = redondearCop(subTotal + comisionPlataforma);
+         }
 
 
         // 5. Crear reserva y descontar cupo en una transacción
