@@ -5,7 +5,7 @@ const cloudinaryService = require("../SERVICES/CloudinaryService.js");
 const authController = {
     async register(req, res) {
         try {
-            const { email, password, nombre, telefono, rol, image, faceImageUrl } = req.body;
+            const { email, password, nombre, telefono, rol, image, faceImageUrl, nombreEmergencia, numeroEmergencia } = req.body;
 
             if (!email || !password || !nombre) {
                 return res.status(400).json({ error: "Faltan campos obligatorios: email, password y nombre son requeridos" });
@@ -43,7 +43,9 @@ const authController = {
                 nombre,
                 telefono,
                 rol,
-                fotoPerfil: imageUrl || null
+                fotoPerfil: imageUrl || null,
+                nombreEmergencia,
+                numeroEmergencia
             });
 
             // Notificar a los admins en tiempo real

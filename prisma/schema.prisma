@@ -159,6 +159,10 @@ model Usuarios {
   resetToken       String?   @db.VarChar(255)
   resetTokenExpiry DateTime?
 
+  // Datos de contacto de emergencia
+  nombreEmergencia String?   @db.VarChar(100)
+  numeroEmergencia String?   @db.VarChar(20)
+
   @@map("Usuarios")
 }
 

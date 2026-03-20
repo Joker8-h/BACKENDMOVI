@@ -83,7 +83,7 @@ async function validarDominioCorreo(email) {
 
 const authService = {
     async registrar(data) {
-        const { email, password, nombre, telefono, rol, fotoPerfil } = data;
+        const { email, password, nombre, telefono, rol, fotoPerfil, nombreEmergencia, numeroEmergencia } = data;
 
         console.log("DEBUG authService.registrar - fotoPerfil recibido:", fotoPerfil);
         console.log("DEBUG authService.registrar - Longitud de fotoPerfil:", fotoPerfil ? fotoPerfil.length : 0);
@@ -138,7 +138,9 @@ const authService = {
                 fotoPerfil,
                 idRol: rolDb.idRol,
                 estado: "ACTIVO",
-                isEmailVerified: true
+                isEmailVerified: true,
+                nombreEmergencia,
+                numeroEmergencia
             },
             include: {
                 rol: true
@@ -384,7 +386,9 @@ const authService = {
                 email: true,
                 telefono: true,
                 estado: true,
-                rol: true
+                rol: true,
+                nombreEmergencia: true,
+                numeroEmergencia: true
             }
         });
         return usuarioActualizado;

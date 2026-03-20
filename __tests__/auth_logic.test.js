@@ -24,7 +24,13 @@ jest.mock('../SERVICES/auth.service.js', () => {
                 // Así es como el auth.service real rechaza la promesa si falla la validación
                 return Promise.reject(new Error(`Contraseña no válida: ${validacion.errors.join(" ")}`));
             }
-            return Promise.resolve({ idUsuarios: 1, email: data.email, nombre: data.nombre });
+            return Promise.resolve({ 
+                idUsuarios: 1, 
+                email: data.email, 
+                nombre: data.nombre,
+                nombreEmergencia: data.nombreEmergencia,
+                numeroEmergencia: data.numeroEmergencia
+            });
         }),
         obtenerTodasLasFotos: jest.fn().mockResolvedValue([])
     };
@@ -83,5 +89,23 @@ describe('Pruebas de Lógica de Negocio (Auth Service Validador)', () => {
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('mensaje', 'Registro exitoso');
         expect(response.body.usuario).toHaveProperty('email', 'nuevo@test.com');
+    });
+
+    it('Debería registrarse correctamente con nombre y número de emergencia', async () => {
+        const testData = {
+            email: "emergencia@test.com",
+            password: "FuertePassword123!", 
+            nombre: "Usuario Emergencia",
+            nombreEmergencia: "Contacto Socorro",
+            numeroEmergencia: "911911911"
+        };
+        
+        const response = await request(app)
+            .post('/api/auth/registro')
+            .send(testData);
+            
+        expect(response.status).toBe(200);
+        expect(response.body.usuario).toHaveProperty('nombreEmergencia', 'Contacto Socorro');
+        expect(response.body.usuario).toHaveProperty('numeroEmergencia', '911911911');
     });
 });

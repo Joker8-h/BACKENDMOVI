@@ -29,11 +29,11 @@ describe('Pruebas Estructurales de Validación - Vehículos', () => {
             .post('/api/vehiculos')
             .set('Authorization', `Bearer ${testToken}`)
             .send({
-                modelo: "Avanza",   
+                modelo: "Avanza",
                 placa: "XYZ123",
                 capacidad: "4"
             });
-            
+
         expect(response.body).toHaveProperty('error');
         expect(response.body.error).toMatch(/marca/i);
     });
@@ -43,7 +43,7 @@ describe('Pruebas Estructurales de Validación - Vehículos', () => {
         const responseExitoso = await request(app)
             .get('/api/vehiculos/1')
             .set('Authorization', `Bearer ${testToken}`);
-            
+                
         expect(responseExitoso.status).toBe(200);
         expect(responseExitoso.body).toHaveProperty('marca', 'Toyota');
 
