@@ -24,6 +24,9 @@ router.post('/:id/finalizar', authorize(['CONDUCTOR']), viajesController.finaliz
 // Cancelar viaje
 router.post('/:id/cancelar', authorize(['CONDUCTOR', 'ADMIN']), viajesController.cancelar);
 
+// Estimar precio de un tramo
+router.get('/:id/estimar-precio', viajesController.estimarPrecio);
+
 // Ver detalle viaje
 router.get('/:id', viajesController.getById);
 

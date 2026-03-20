@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient({});
 const axios = require("axios");
+const pricingService = require("./PricingService");
 const notificacionesService = require("./NotificacionesService");
 
 const RUTAS_PYTHON_URL = process.env.RUTAS_PYTHON_URL;
@@ -85,114 +86,18 @@ const reservasService = {
             throw new Error("Debe indicar un punto de bajada (parada o coordenadas).");
         }
 
-        // 4. Calcular precios (Lógica de tramos)
-        let precioFinal        = 0;
-        let comisionPlataforma  = 0;
-        let distanciaRecorrida   = 0;
-
-        // Helper de redondeo al múltiplo de 100 más cercano (Mínimo 500)
-        const redondearCop = (monto) => {
-            if (!monto || monto <= 0) return 0;
-            const res = Math.ceil(monto / 100) * 100;
-            return Math.max(res, 500);
-        };
-
-        if (data.idParadaSubida && data.idParadaBajada) {
-            // Si ambas son paradas de la ruta, intentamos usar el microservicio rutaspython
-            try {
-                if (RUTAS_PYTHON_URL && viaje.ruta && Array.isArray(viaje.ruta.paradas) && viaje.ruta.paradas.length >= 2) {
-                    const paradasOrdenadas = [...viaje.ruta.paradas].sort((a, b) => a.orden - b.orden);
-
-                    const idxSubida = paradasOrdenadas.findIndex(
-                        (p) => p.idParada === parseInt(data.idParadaSubida)
-                    );
-                    const idxBajada = paradasOrdenadas.findIndex(
-                        (p) => p.idParada === parseInt(data.idParadaBajada)
-                    );
-
-                    if (idxSubida !== -1 && idxBajada !== -1 && idxBajada > idxSubida) {
-                        const stops = paradasOrdenadas.map((p) => ({
-                            lat: parseFloat(p.lat),
-                            lng: parseFloat(p.lng),
-                        }));
-
-                        const totalRoutePriceCop = Math.max(
-                            1,
-                            Math.round(parseFloat(viaje.precio || 0))
-                        );
-
-                        const body = {
-                            stops,
-                            total_route_price_cop: totalRoutePriceCop,
-                            passengers: [
-                                {
-                                    passenger_id: idUsuario,
-                                    start_index: idxSubida,
-                                    end_index: idxBajada,
-                                },
-                            ],
-                        };
-
-                        const resp = await axios.post(
-                            `${RUTAS_PYTHON_URL}/segment-fares`,
-                            body,
-                            { timeout: 10000 }
-                        );
-
-                        const pasajeroSegmento =
-                            resp?.data?.passengers && resp.data.passengers[0]
-                                ? resp.data.passengers[0]
-                                : null;
-
-                        if (
-                            pasajeroSegmento &&
-                            typeof pasajeroSegmento.fare_cop === "number" &&
-                            pasajeroSegmento.fare_cop > 0
-                        ) {
-                            distanciaRecorrida = parseFloat(
-                                pasajeroSegmento.distance_km || 0
-                            );
-
-                            const baseSegmento = pasajeroSegmento.fare_cop;
-                             // Aplicamos la misma lógica de comisión (10% sobre el valor base del tramo)
-                             comisionPlataforma = redondearCop(baseSegmento * 0.1);
-                             precioFinal = redondearCop(baseSegmento + comisionPlataforma);
-                         }
-                    }
-                }
-            } catch (error) {
-                console.error(
-                    "Error al calcular precio con rutaspython /segment-fares:",
-                    error.message
-                );
-            }
-
-            // Si no se pudo calcular con rutaspython, usamos el kmAcumulado como antes
-            if (precioFinal === 0) {
-                distanciaRecorrida = Math.max(0, kmBajada - kmSubida);
-            }
-        }
-
-        // Si aún no hay precioFinal (coordenadas personalizadas o fallback), usamos Haversine y reglas locales
-        if (precioFinal === 0) {
-            if (distanciaRecorrida === 0) {
-                distanciaRecorrida = this.calcularDistancia(
-                    latSubida,
-                    lngSubida,
-                    latBajada,
-                    lngBajada
-                );
-            }
-
-            // Precio base (ejemplo simple: $1500 + $500/km)
-            const tarifaBase = 1500;
-            const tarifaPorKm = 500;
-            const subTotal = tarifaBase + (distanciaRecorrida * tarifaPorKm);
-
-             // Comisión plataforma: 10% ADICIONAL al precio del viaje (El pasajero asume el costo)
-             comisionPlataforma = redondearCop(subTotal * 0.10);
-             precioFinal = redondearCop(subTotal + comisionPlataforma);
-         }
+        // 4. Calcular precios (Delegado a PricingService para consistencia)
+        let { precioFinal, comisionPlataforma, distanciaRecorrida } =
+            await pricingService.estimarPrecioTramo({
+                idViaje: data.idViajes,
+                latSubida,
+                lngSubida,
+                latBajada,
+                lngBajada,
+                idParadaSubida: data.idParadaSubida,
+                idParadaBajada: data.idParadaBajada,
+                idUsuario
+            });
 
 
         // 5. Crear reserva y descontar cupo en una transacción

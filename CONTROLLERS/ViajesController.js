@@ -1,5 +1,6 @@
 const viajesService = require("../SERVICES/ViajesService");
 const documentacionService = require("../SERVICES/DocumentacionService");
+const pricingService = require("../SERVICES/PricingService");
 
 const viajesController = {
     async create(req, res) {
@@ -105,7 +106,28 @@ const viajesController = {
         }
     },
 
+    async estimarPrecio(req, res) {
+        try {
+            const { id } = req.params;
+            const { latSubida, lngSubida, latBajada, lngBajada, idParadaSubida, idParadaBajada } = req.query;
+            const idUsuario = req.user?.id || 0;
 
+            const estimacion = await pricingService.estimarPrecioTramo({
+                idViaje: id,
+                latSubida: parseFloat(latSubida),
+                lngSubida: parseFloat(lngSubida),
+                latBajada: parseFloat(latBajada),
+                lngBajada: parseFloat(lngBajada),
+                idParadaSubida: idParadaSubida ? parseInt(idParadaSubida) : null,
+                idParadaBajada: idParadaBajada ? parseInt(idParadaBajada) : null,
+                idUsuario
+            });
+
+            res.json(estimacion);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 };
 
 module.exports = viajesController;
