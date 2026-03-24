@@ -491,6 +491,7 @@ model ReportesPago {
   mesCorrespondiente DateTime
   montoComision      Decimal           @db.Decimal(10, 2)
   fotoComprobante    String            @db.VarChar(500)
+  cantidadEnviada    Decimal?          @db.Decimal(10, 2)
   estado             EstadoReportePago @default(PENDIENTE)
   fechaEnvio         DateTime          @default(now())
   fechaRevision      DateTime?

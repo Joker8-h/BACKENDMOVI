@@ -6,18 +6,37 @@ const cloudinaryService = require('./CloudinaryService');
 
 const reportesPagoService = {
     /**
-     * Obtener la comisión acumulada del mes actual para un conductor
+     * Obtener la comisión acumulada para un conductor
+     * Calcula desde el último pago aprobado o desde la creación de la cuenta
      */
     async obtenerComisionAcumulada(idUsuario) {
         const ahora = new Date();
-        const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-        const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59);
+        
+        // 1. Obtener datos del usuario (fecha de registro)
+        const usuario = await prisma.usuarios.findUnique({
+            where: { idUsuarios: idUsuario },
+            select: { creadoEn: true, nombre: true }
+        });
 
-        // Buscar todos los viajes completados del conductor en el mes
+        if (!usuario) throw new Error('Usuario no encontrado');
+
+        // 2. Buscar el último reporte APROBADO para saber desde cuándo contar
+        const ultimoReporteAprobado = await prisma.reportesPago.findFirst({
+            where: {
+                idUsuario,
+                estado: 'APROBADO'
+            },
+            orderBy: { fechaEnvio: 'desc' }
+        });
+
+        // La fecha de inicio es la fecha de envío del último pago aprobado, o la creación de la cuenta
+        const fechaInicio = ultimoReporteAprobado ? ultimoReporteAprobado.fechaEnvio : usuario.creadoEn;
+
+        // 3. Buscar todos los viajes completados desde la fecha de inicio
         const reservasCompletadas = await prisma.usuarioViaje.findMany({
             where: {
                 estado: 'COMPLETADO',
-                creadoEn: { gte: inicioMes, lte: finMes },
+                creadoEn: { gt: fechaInicio },
                 viaje: {
                     vehiculo: {
                         idUsuario: idUsuario
@@ -31,30 +50,42 @@ const reportesPagoService = {
         });
 
         const totalComision = reservasCompletadas.reduce((acc, r) => {
-            // Si ya tiene comisionPlataforma calculada, usarla
             if (r.comisionPlataforma) return acc + Number(r.comisionPlataforma);
-            // Si no, calcular 10% del precioFinal
             return acc + (Number(r.precioFinal || 0) * 0.10);
         }, 0);
 
         const totalIngresos = reservasCompletadas.reduce((acc, r) => acc + Number(r.precioFinal || 0), 0);
 
-        // Verificar si ya tiene reporte del mes
-        const reporteMes = await prisma.reportesPago.findFirst({
+        // 4. Calcular próximo día de cobro (Billing Day)
+        // Se basa en el día del mes en que se registró
+        const diaRegistro = usuario.creadoEn.getDate();
+        let proximoCobro = new Date(ahora.getFullYear(), ahora.getMonth(), diaRegistro);
+        
+        // Si ya pasó el día de cobro este mes, el próximo es el mes que viene
+        if (proximoCobro <= ahora) {
+            proximoCobro = new Date(ahora.getFullYear(), ahora.getMonth() + 1, diaRegistro);
+        }
+
+        const diasRestantes = Math.ceil((proximoCobro - ahora) / (1000 * 60 * 60 * 24));
+
+        // Verificar si hay algún reporte PENDIENTE actualmente
+        const reportePendiente = await prisma.reportesPago.findFirst({
             where: {
                 idUsuario,
-                mesCorrespondiente: { gte: inicioMes, lte: finMes }
+                estado: 'PENDIENTE'
             },
             orderBy: { fechaEnvio: 'desc' }
         });
 
         return {
-            mesActual: `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`,
+            fechaInicioCalculo: fechaInicio,
             totalIngresos: Number(totalIngresos.toFixed(2)),
             totalComision: Number(totalComision.toFixed(2)),
             viajesCompletados: reservasCompletadas.length,
-            reporteEnviado: !!reporteMes,
-            estadoReporte: reporteMes?.estado || null
+            proximoCobro,
+            diasRestantes,
+            tieneReportePendiente: !!reportePendiente,
+            estadoReporte: reportePendiente?.estado || (ultimoReporteAprobado ? 'APROBADO' : null)
         };
     },
 
@@ -68,32 +99,25 @@ const reportesPagoService = {
             throw new Error('Debe adjuntar la foto del comprobante de pago.');
         }
 
-        // Obtener comisión acumulada
+        // Obtener comisión acumulada actual
         const comisionInfo = await this.obtenerComisionAcumulada(idUsuario);
 
         if (comisionInfo.totalComision <= 0) {
-            throw new Error('No tiene comisión pendiente para este mes.');
+            throw new Error('No tiene comisión pendiente por reportar actualmente.');
         }
 
-        // Verificar que no haya un reporte pendiente o aprobado del mes
-        const ahora = new Date();
-        const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-        const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59);
-
-        const reporteExistente = await prisma.reportesPago.findFirst({
+        // Ya no restringimos por mes calendario. 
+        // Solo verificamos que no tenga un reporte idéntico pendiente (opcional, pero ayuda a evitar duplicados accidentales)
+        const reportePendienteMismoMonto = await prisma.reportesPago.findFirst({
             where: {
                 idUsuario,
-                mesCorrespondiente: { gte: inicioMes, lte: finMes },
-                estado: { in: ['PENDIENTE', 'APROBADO'] }
+                estado: 'PENDIENTE',
+                montoComision: comisionInfo.totalComision
             }
         });
 
-        if (reporteExistente) {
-            throw new Error(
-                reporteExistente.estado === 'APROBADO'
-                    ? 'Ya tiene un reporte aprobado para este mes.'
-                    : 'Ya tiene un reporte pendiente de revisión para este mes.'
-            );
+        if (reportePendienteMismoMonto) {
+            throw new Error('Ya tienes un reporte pendiente con este mismo monto. Espera a que sea revisado.');
         }
 
         let fotoUrl;
@@ -108,9 +132,10 @@ const reportesPagoService = {
         const reporte = await prisma.reportesPago.create({
             data: {
                 idUsuario,
-                mesCorrespondiente: inicioMes,
+                mesCorrespondiente: comisionInfo.proximoCobro, // Guardamos la fecha del ciclo actual
                 montoComision: comisionInfo.totalComision,
                 fotoComprobante: fotoUrl,
+                cantidadEnviada: data.cantidad ? Number(data.cantidad) : null,
                 estado: 'PENDIENTE'
             },
             include: {
@@ -129,7 +154,7 @@ const reportesPagoService = {
                 await notificacionesService.crearNotificacion({
                     idUsuario: admin.idUsuarios,
                     titulo: 'Nuevo Reporte de Pago',
-                    mensaje: `${reporte.usuario.nombre} ha enviado un comprobante de pago por $${comisionInfo.totalComision.toLocaleString()} COP`,
+                    mensaje: `${reporte.usuario.nombre} ha enviado un comprobante de pago por $${comisionInfo.totalComision.toLocaleString()} COP. Corresponde al ciclo de ${new Date(comisionInfo.fechaInicioCalculo).toLocaleDateString()} a ${new Date(comisionInfo.proximoCobro).toLocaleDateString()}.`,
                     tipo: 'PAGO'
                 });
             } catch (e) {
@@ -243,69 +268,65 @@ const reportesPagoService = {
     },
 
     /**
-     * Verificar pagos mensuales - Suspender conductores sin pago aprobado
-     * Se puede llamar manualmente o con un cron job
+     * Verificar pagos vencidos - Suspende conductores que pasaron su fecha de cobro sin pagar
      */
     async verificarPagosMensuales() {
         const ahora = new Date();
-        // Verificar el mes anterior
-        const mesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
-        const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59);
-
+        
         // Obtener todos los conductores activos
         const conductores = await prisma.usuarios.findMany({
             where: {
                 rol: { nombre: 'CONDUCTOR' },
                 estado: 'ACTIVO'
             },
-            select: { idUsuarios: true, nombre: true }
+            select: { idUsuarios: true, nombre: true, email: true, creadoEn: true }
         });
 
         const suspendidos = [];
 
         for (const conductor of conductores) {
-            // Verificar si tiene viajes completados en el mes anterior
-            const viajesCount = await prisma.usuarioViaje.count({
-                where: {
-                    estado: 'COMPLETADO',
-                    creadoEn: { gte: mesAnterior, lte: finMesAnterior },
-                    viaje: {
-                        vehiculo: { idUsuario: conductor.idUsuarios }
+            // Calcular su fecha de vencimiento actual
+            const infoCobro = await this.obtenerComisionAcumulada(conductor.idUsuarios);
+            
+            // La fecha de vencimiento es proximoCobro - 1 mes (o el día de registro si es el primer mes)
+            // Pero simplifiquemos: si totalComision > 0 Y el día de hoy es mayor/igual al día de registro + un margen?
+            // Mejor así: si diasRestantes es muy alto (acaba de pasar el ciclo) Y tiene deuda acumulada 
+            // Y no tiene un reporte pendiente: SUSPENDER.
+            
+            // Lógica exacta: si hoy PASÓ su día de registro en este mes, y sigue teniendo deuda del ciclo anterior.
+            const diaVencimiento = conductor.creadoEn.getDate();
+            const hoyDia = ahora.getDate();
+            
+            if (hoyDia > diaVencimiento && infoCobro.totalComision > 100 && !infoCobro.tieneReportePendiente) {
+                // Verificar si ya envió un reporte en los últimos días que esté aprobado
+                const ultimoAprobadoReciente = await prisma.reportesPago.findFirst({
+                    where: {
+                        idUsuario: conductor.idUsuarios,
+                        estado: 'APROBADO',
+                        fechaRevision: { gte: new Date(ahora.getFullYear(), ahora.getMonth(), diaVencimiento) }
                     }
-                }
-            });
-
-            // Si no tuvo viajes, no necesita pagar
-            if (viajesCount === 0) continue;
-
-            // Verificar si tiene un reporte aprobado del mes anterior
-            const reporteAprobado = await prisma.reportesPago.findFirst({
-                where: {
-                    idUsuario: conductor.idUsuarios,
-                    mesCorrespondiente: { gte: mesAnterior, lte: finMesAnterior },
-                    estado: 'APROBADO'
-                }
-            });
-
-            // Si no tiene reporte aprobado, suspender
-            if (!reporteAprobado) {
-                await prisma.usuarios.update({
-                    where: { idUsuarios: conductor.idUsuarios },
-                    data: { estado: 'SUSPENDIDO' }
                 });
 
-                suspendidos.push(conductor);
-
-                // Notificar
-                try {
-                    await notificacionesService.crearNotificacion({
-                        idUsuario: conductor.idUsuarios,
-                        titulo: 'Cuenta Suspendida',
-                        mensaje: 'Tu cuenta ha sido suspendida por no enviar el comprobante de pago del mes anterior. Contacta al administrador.',
-                        tipo: 'SISTEMA'
+                if (!ultimoAprobadoReciente) {
+                    await prisma.usuarios.update({
+                        where: { idUsuarios: conductor.idUsuarios },
+                        data: { estado: 'SUSPENDIDO' }
                     });
-                } catch (e) {
-                    console.error('[ReportesPago] Error notificación suspensión:', e.message);
+
+                    suspendidos.push(conductor);
+
+                    // Notificaciones
+                    try {
+                        await notificacionesService.crearNotificacion({
+                            idUsuario: conductor.idUsuarios,
+                            titulo: 'Cuenta Suspendida',
+                            mensaje: 'Tu cuenta ha sido suspendida por falta de pago de comisiones vencidas. Por favor envía tu comprobante.',
+                            tipo: 'SISTEMA'
+                        });
+                        await EmailService.enviarNotificacionDesactivacion(conductor.email, conductor.nombre);
+                    } catch (e) {
+                        console.error('[ReportesPago] Error notificaciones suspensión:', e.message);
+                    }
                 }
             }
         }
@@ -318,88 +339,53 @@ const reportesPagoService = {
     },
 
     /**
-     * Enviar recordatorios de pago a conductores que no han pagado
-     * Se ejecuta 5 días antes de fin de mes (o cuando el admin lo solicite)
+     * Enviar recordatorios de pago basados en la fecha individual de cada conductor
      */
     async enviarRecordatoriosPago() {
         const ahora = new Date();
-        const ultimoDiaMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0);
-        const diasRestantes = ultimoDiaMes.getDate() - ahora.getDate();
-
-        const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-        const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59);
-
-        // Obtener conductores activos
+        
         const conductores = await prisma.usuarios.findMany({
             where: {
                 rol: { nombre: 'CONDUCTOR' },
                 estado: 'ACTIVO'
             },
-            select: { idUsuarios: true, nombre: true, email: true }
+            select: { idUsuarios: true, nombre: true, email: true, creadoEn: true }
         });
 
         let notificados = 0;
 
         for (const conductor of conductores) {
-            // Verificar si tiene viajes completados este mes
-            const viajesCount = await prisma.usuarioViaje.count({
-                where: {
-                    estado: 'COMPLETADO',
-                    creadoEn: { gte: inicioMes, lte: finMes },
-                    viaje: {
-                        vehiculo: { idUsuario: conductor.idUsuarios }
-                    }
+            const info = await this.obtenerComisionAcumulada(conductor.idUsuarios);
+
+            // Solo notificar si tiene deuda y faltan exactamente 5 días (o menos si es urgente)
+            if (info.totalComision > 0 && info.diasRestantes <= 5 && !info.tieneReportePendiente) {
+                
+                // Evitar notificar múltiples veces el mismo día (opcional)
+                
+                try {
+                    await notificacionesService.crearNotificacion({
+                        idUsuario: conductor.idUsuarios,
+                        titulo: '⚠️ Recordatorio de Pago',
+                        mensaje: `Te quedan ${info.diasRestantes} días para el cierre de tu ciclo de facturación. Comisión pendiente: $${info.totalComision.toLocaleString()} COP.`,
+                        tipo: 'PAGO'
+                    });
+
+                    await EmailService.enviarRecordatorioPago(
+                        conductor.email,
+                        conductor.nombre,
+                        info.totalComision,
+                        info.diasRestantes
+                    );
+                    notificados++;
+                } catch (e) {
+                    console.error('[ReportesPago] Error recordatorio:', e.message);
                 }
-            });
-
-            if (viajesCount === 0) continue;
-
-            // Verificar si ya tiene reporte aprobado o pendiente del mes
-            const reporteExistente = await prisma.reportesPago.findFirst({
-                where: {
-                    idUsuario: conductor.idUsuarios,
-                    mesCorrespondiente: { gte: inicioMes, lte: finMes },
-                    estado: { in: ['PENDIENTE', 'APROBADO'] }
-                }
-            });
-
-            // Si ya tiene reporte, no recordar
-            if (reporteExistente) continue;
-
-            // Calcular comisión
-            const comisionInfo = await this.obtenerComisionAcumulada(conductor.idUsuarios);
-
-            // Enviar notificación in-app
-            try {
-                await notificacionesService.crearNotificacion({
-                    idUsuario: conductor.idUsuarios,
-                    titulo: '⚠️ Recordatorio de Pago',
-                    mensaje: `Te quedan ${diasRestantes} días para enviar tu comprobante de pago. Comisión pendiente: $${comisionInfo.totalComision.toLocaleString()} COP. Si no pagas, tu cuenta será suspendida.`,
-                    tipo: 'PAGO'
-                });
-            } catch (e) {
-                console.error('[ReportesPago] Error notificación recordatorio:', e.message);
             }
-
-            // Enviar email
-            try {
-                await EmailService.enviarRecordatorioPago(
-                    conductor.email,
-                    conductor.nombre,
-                    comisionInfo.totalComision,
-                    diasRestantes
-                );
-            } catch (e) {
-                console.error('[ReportesPago] Error email recordatorio:', e.message);
-            }
-
-            notificados++;
         }
 
         return {
             totalConductores: conductores.length,
-            notificados,
-            diasRestantes
+            notificados
         };
     }
 };

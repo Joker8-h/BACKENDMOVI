@@ -413,6 +413,12 @@ const authService = {
             } catch (emailError) {
                 console.error("Error al enviar notificación de activación:", emailError.message);
             }
+        } else if (estado === "INACTIVO" || estado === "inactivo" || estado === "SUSPENDIDO" || estado === "suspendido") {
+            try {
+                await emailService.enviarNotificacionDesactivacion(usuarioActualizado.email, usuarioActualizado.nombre);
+            } catch (emailError) {
+                console.error("Error al enviar notificación de desactivación:", emailError.message);
+            }
         }
 
         return usuarioActualizado;

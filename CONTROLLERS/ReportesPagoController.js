@@ -31,11 +31,16 @@ class ReportesPagoController {
 
             const reporte = await reportesPagoService.crearReporte(id, req.body);
 
+            // Capturar la cantidad enviada por el conductor (si está presente)
+            const cantidadEnviada = req.body.cantidad || 'No especificada';
+
             // Enviar email al admin
             try {
                 await EmailService.enviarNotificacionReportePago(
                     reporte.usuario.nombre,
-                    reporte.montoComision
+                    reporte.montoComision,
+                    reporte.fotoComprobante,
+                    cantidadEnviada
                 );
             } catch (emailError) {
                 console.error('[ReportesPago] Error enviando email:', emailError.message);

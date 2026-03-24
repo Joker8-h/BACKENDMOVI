@@ -100,9 +100,11 @@ const EmailService = {
     /**
      * Notifica al administrador sobre un nuevo reporte de pago
      * @param {string} nombreConductor - Nombre del conductor
-     * @param {number} monto - Monto de la comisión
+     * @param {number} monto - Monto de la comisión esperada
+     * @param {string} fotoComprobante - URL de la imagen del comprobante
+     * @param {number|string} cantidadEnviada - Cantidad reportada por el conductor
      */
-    async enviarNotificacionReportePago(nombreConductor, monto) {
+    async enviarNotificacionReportePago(nombreConductor, monto, fotoComprobante, cantidadEnviada) {
         try {
             // Enviar al email del admin configurado
             const emailAdmin = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'admin@moviflex.com';
@@ -125,8 +127,13 @@ const EmailService = {
                         <p>Se ha recibido un nuevo comprobante de pago en la plataforma <strong>MoviFlex</strong>.</p>
                         <div style="background-color: #f8fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
                             <p><strong>Conductor:</strong> ${nombreConductor}</p>
-                            <p><strong>Monto Comisión:</strong> $${Number(monto).toLocaleString()} COP</p>
+                            <p><strong>Monto Comisión (Esperado):</strong> $${Number(monto).toLocaleString()} COP</p>
+                            <p><strong>Cantidad Enviada (Reportada):</strong> ${isNaN(Number(cantidadEnviada)) ? cantidadEnviada : '$' + Number(cantidadEnviada).toLocaleString() + ' COP'}</p>
                             <p><strong>Estado:</strong> <span style="color: #f39c12; font-weight: bold;">Pendiente de revisión</span></p>
+                        </div>
+                        <p><strong>Comprobante adjunto:</strong></p>
+                        <div style="text-align: center; margin: 20px 0;">
+                            <img src="${fotoComprobante}" alt="Comprobante de Pago" style="max-width: 100%; border-radius: 8px; border: 1px solid #ddd;">
                         </div>
                         <p>Ingresa al panel de administración para revisar y aprobar o rechazar este reporte.</p>
                         <div style="text-align: center; margin: 30px 0;">
@@ -143,6 +150,45 @@ const EmailService = {
             return true;
         } catch (error) {
             console.error(`[EmailService] Error enviando notificación de reporte de pago:`, error.message);
+            return false;
+        }
+    },
+
+    /**
+     * Notifica al usuario que su cuenta ha sido desactivada
+     * @param {string} emailDestino - Correo del destinatario
+     * @param {string} nombre - Nombre del usuario
+     */
+    async enviarNotificacionDesactivacion(emailDestino, nombre) {
+        try {
+            const email = {
+                sender: {
+                    name: "MoviFlex",
+                    email: process.env.EMAIL_USER || "no-reply@moviflex.com"
+                },
+                to: [{
+                    email: emailDestino
+                }],
+                subject: "Tu cuenta en MoviFlex ha sido suspendida/desactivada",
+                htmlContent: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <img src="https://res.cloudinary.com/davda0bon/image/upload/v1741731600/TODO_MOVI_TRANSPARENTE.png" alt="MoviFlex Logo" style="width: 180px; max-width: 100%;">
+                        </div>
+                        <h2 style="color: #e74c3c; text-align: center;">Aviso Importante, ${nombre}</h2>
+                        <p>Te informamos que tu cuenta en <strong>MoviFlex</strong> ha sido desactivada o suspendida por nuestro departamento administrativo.</p>
+                        <p>Si consideras que esto es un error, por favor ponte en contacto con nuestro equipo de soporte para aclarar la situación.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #8899a6; text-align: center;">MoviFlex Team</p>
+                    </div>
+                `
+            };
+
+            const result = await apiInstance.sendTransacEmail(email);
+            console.log(`[EmailService] Notificación de desactivación enviada a ${emailDestino}. ID: ${result.messageId}`);
+            return true;
+        } catch (error) {
+            console.error(`[EmailService] Error enviando notificación de desactivación:`, error.message);
             return false;
         }
     },
