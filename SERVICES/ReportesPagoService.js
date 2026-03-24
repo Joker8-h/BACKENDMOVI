@@ -37,8 +37,8 @@ const reportesPagoService = {
         const reservasCompletadas = await prisma.usuarioViaje.findMany({
             where: {
                 estado: 'COMPLETADO',
-                creadoEn: { gte: fechaInicio },
                 viaje: {
+                    fechaHoraSalida: { gte: fechaInicio },
                     vehiculo: {
                         idUsuario: idUsuario
                     }
@@ -104,8 +104,10 @@ const reportesPagoService = {
 
         // Obtener comisión acumulada actual
         const comisionInfo = await this.obtenerComisionAcumulada(idUsuario);
+        console.log(`[ReportesPago] Validando reporte para usuario ${idUsuario}. Comisión calculada: ${comisionInfo.totalComision}`);
 
         if (comisionInfo.totalComision <= 0) {
+            console.error(`[ReportesPago] Error: El usuario ${idUsuario} no tiene comisión pendiente (calc: ${comisionInfo.totalComision})`);
             throw new Error('No tiene comisión pendiente por reportar actualmente.');
         }
 
@@ -135,16 +137,18 @@ const reportesPagoService = {
         const reporte = await prisma.reportesPago.create({
             data: {
                 idUsuario,
-                mesCorrespondiente: comisionInfo.proximoCobro, // Guardamos la fecha del ciclo actual
+                mesCorrespondiente: comisionInfo.proximoCobro,
                 montoComision: comisionInfo.totalComision,
                 fotoComprobante: fotoUrl,
-                cantidadEnviada: data.cantidad ? Number(data.cantidad) : null,
+                cantidadEnviada: data.cantidad ? Number(Number(data.cantidad).toFixed(2)) : null,
                 estado: 'PENDIENTE'
             },
             include: {
                 usuario: { select: { nombre: true, email: true } }
             }
         });
+
+        console.log(`[ReportesPago] Reporte creado exitosamente: ${reporte.idReporte}`);
 
         // Notificar a TODOS los admins
         const admins = await prisma.usuarios.findMany({
