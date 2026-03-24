@@ -30,8 +30,8 @@ const reportesPagoService = {
             orderBy: { fechaEnvio: 'desc' }
         });
 
-        // La fecha de inicio es la fecha de envío del último pago aprobado, o la creación de la cuenta
-        const fechaInicio = ultimoReporteAprobado ? ultimoReporteAprobado.fechaEnvio : usuario.creadoEn;
+        // La fecha de inicio es la fecha de envío del último pago aprobado, o el inicio de los tiempos si es el primer pago
+        const fechaInicio = ultimoReporteAprobado ? ultimoReporteAprobado.fechaEnvio : new Date(0);
 
         // 3. Buscar todos los viajes completados desde la fecha de inicio
         const reservasCompletadas = await prisma.usuarioViaje.findMany({
