@@ -106,10 +106,10 @@ const reportesPagoService = {
         const comisionInfo = await this.obtenerComisionAcumulada(idUsuario);
         console.log(`[ReportesPago] Validando reporte para usuario ${idUsuario}. Comisión calculada: ${comisionInfo.totalComision}`);
 
-        if (comisionInfo.totalComision <= 0) {
-            console.error(`[ReportesPago] Error: El usuario ${idUsuario} no tiene comisión pendiente (calc: ${comisionInfo.totalComision})`);
-            throw new Error('No tiene comisión pendiente por reportar actualmente.');
-        }
+        // Permitir el envío de reportes incluso si la comisión calculada es 0, 
+        // según el requerimiento del usuario ("que enviar comprobante esté siempre disponible").
+        // El administrador revisará la cantidad enviada vs el comprobante.
+        
 
         // Ya no restringimos por mes calendario. 
         // Solo verificamos que no tenga un reporte idéntico pendiente (opcional, pero ayuda a evitar duplicados accidentales)
