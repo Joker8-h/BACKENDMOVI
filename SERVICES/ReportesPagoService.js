@@ -9,7 +9,8 @@ const reportesPagoService = {
      * Obtener la comisión acumulada para un conductor
      * Calcula desde el último pago aprobado o desde la creación de la cuenta
      */
-    async obtenerComisionAcumulada(idUsuario) {
+    async obtenerComisionAcumulada(idUsuarioRaw) {
+        const idUsuario = parseInt(idUsuarioRaw);
         const ahora = new Date();
         
         // 1. Obtener datos del usuario (fecha de registro)
@@ -36,7 +37,7 @@ const reportesPagoService = {
         const reservasCompletadas = await prisma.usuarioViaje.findMany({
             where: {
                 estado: 'COMPLETADO',
-                creadoEn: { gt: fechaInicio },
+                creadoEn: { gte: fechaInicio },
                 viaje: {
                     vehiculo: {
                         idUsuario: idUsuario
@@ -55,6 +56,8 @@ const reportesPagoService = {
         }, 0);
 
         const totalIngresos = reservasCompletadas.reduce((acc, r) => acc + Number(r.precioFinal || 0), 0);
+
+        console.log(`[ReportesPago] Usuario ${idUsuario}: ${reservasCompletadas.length} viajes encontrados desde ${fechaInicio.toISOString()}. Total Comision: ${totalComision}`);
 
         // 4. Calcular próximo día de cobro (Billing Day)
         // Se basa en el día del mes en que se registró
